@@ -22,7 +22,7 @@
 #include <string.h>
 #include <time.h>
 
-#define PUERTO 8439
+#define PUERTO 8438
 #define TAM_BUFFER 512
 
 /*
@@ -125,67 +125,71 @@ char *argv[];
 	printf("Connected to %s on port %u at %s",
 			argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 
+	while(1){
 
-	//for (i=20; i<=25; i++) {
-		//*buf = i;
-		strcpy(buf, "LIST c");
-		if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
-			fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
-			fprintf(stderr, "on send number %d\n", i);
+		printf("\nIntroduce comado: ");
+		scanf("%s", buf);
+		//for (i=20; i<=25; i++) {
+			//*buf = i;
+			//strcpy(buf, "LIST c");
+			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
+				fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
+				fprintf(stderr, "on send number %d\n", i);
+				exit(1);
+			}
+		//}
+
+			/* Now, shutdown the connection for further sends.
+			* This will cause the server to receive an end-of-file
+			* condition after it has received all the requests that
+			* have just been sent, indicating that we will not be
+			* sending any further requests.
+			*/
+		if (shutdown(s, 1) == -1) {
+			perror(argv[0]);
+			fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
 			exit(1);
 		}
-	//}
 
-		/* Now, shutdown the connection for further sends.
-		 * This will cause the server to receive an end-of-file
-		 * condition after it has received all the requests that
-		 * have just been sent, indicating that we will not be
-		 * sending any further requests.
-		 */
-	if (shutdown(s, 1) == -1) {
-		perror(argv[0]);
-		fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
-		exit(1);
-	}
-
-		/* Now, start receiving all of the replys from the server.
-		 * This loop will terminate when the recv returns zero,
-		 * which is an end-of-file condition.  This will happen
-		 * after the server has sent all of its replies, and closed
-		 * its end of the connection.
-		 */
-	while (i = recv(s, buf, TAM_BUFFER, 0)) {
-		if (i == -1) {
-            perror(argv[0]);
-			fprintf(stderr, "%s: error reading result\n", argv[0]);
-			exit(1);
+			/* Now, start receiving all of the replys from the server.
+			* This loop will terminate when the recv returns zero,
+			* which is an end-of-file condition.  This will happen
+			* after the server has sent all of its replies, and closed
+			* its end of the connection.
+			*/
+		while (i = recv(s, buf, TAM_BUFFER, 0)) {
+			if (i == -1) {
+				perror(argv[0]);
+				fprintf(stderr, "%s: error reading result\n", argv[0]);
+				exit(1);
+			}
+				/* The reason this while loop exists is that there
+				* is a remote possibility of the above recv returning
+				* less than TAM_BUFFER bytes.  This is because a recv returns
+				* as soon as there is some data, and will not wait for
+				* all of the requested data to arrive.  Since TAM_BUFFER bytes
+				* is relatively small compared to the allowed TCP
+				* packet sizes, a partial receive is unlikely.  If
+				* this example had used 2048 bytes requests instead,
+				* a partial receive would be far more likely.
+				* This loop will keep receiving until all TAM_BUFFER bytes
+				* have been received, thus guaranteeing that the
+				* next recv at the top of the loop will start at
+				* the begining of the next reply.
+				*/
+			while (i < TAM_BUFFER) {
+				j = recv(s, &buf[i], TAM_BUFFER-i, 0);
+				if (j == -1) {
+						perror(argv[0]);
+						fprintf(stderr, "%s: error reading result\n", argv[0]);
+						exit(1);
+				}
+				i += j;
+			}
+				/* Print out message indicating the identity of this reply. */
+			//printf("Received result number %d\n", *buf);
+			printf("\nC: %s", buf);
 		}
-			/* The reason this while loop exists is that there
-			 * is a remote possibility of the above recv returning
-			 * less than TAM_BUFFER bytes.  This is because a recv returns
-			 * as soon as there is some data, and will not wait for
-			 * all of the requested data to arrive.  Since TAM_BUFFER bytes
-			 * is relatively small compared to the allowed TCP
-			 * packet sizes, a partial receive is unlikely.  If
-			 * this example had used 2048 bytes requests instead,
-			 * a partial receive would be far more likely.
-			 * This loop will keep receiving until all TAM_BUFFER bytes
-			 * have been received, thus guaranteeing that the
-			 * next recv at the top of the loop will start at
-			 * the begining of the next reply.
-			 */
-		while (i < TAM_BUFFER) {
-			j = recv(s, &buf[i], TAM_BUFFER-i, 0);
-			if (j == -1) {
-                     perror(argv[0]);
-			         fprintf(stderr, "%s: error reading result\n", argv[0]);
-			         exit(1);
-               }
-			i += j;
-		}
-			/* Print out message indicating the identity of this reply. */
-		printf("Received result number %d\n", *buf);
-		printf("BUFF: %s", buf);
 	}
 
     /* Print message indicating completion of task. */

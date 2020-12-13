@@ -5,9 +5,32 @@
 #include "serverUtils.h"
 #include "cola.h"
 
-void commandIn(char *bf){
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/errno.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <signal.h>
+#include <netdb.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+int sockfdGlobal;
+char* bfGlobal;
+size_t lenGlobal;
+int flagGlobal;
+char* hostNameGlobal;
+
+void commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 
 	static char lastCommand[32];
+
+	sockfdGlobal = sockfd;
+	bfGlobal = bf;
+	lenGlobal = len;
+	flagGlobal = flag;
+	hostNameGlobal = hostName;
 
 	//SE DEBE SPLITEAR PREVIAMENTE
 	char bfCopy[512];
@@ -36,11 +59,16 @@ void commandIn(char *bf){
 	} else if(strcmp(command, "QUIT") == 0){
 		//comando QUIT
 	} else{
-		//No reconocido
+		sendMsg("500 Comando no conocido");
 	}
 
 	//strcpy(bf, "SALGO");
 
+}
+
+void sendMsg(char* msg){
+
+	if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) errout(hostNameGlobal);
 }
 
 
@@ -71,15 +99,20 @@ Cola splitCommand(char *bf){
 void commandList(char *buf){
 
 	//Devolver nombre de grupo, num de articulos, num del primero y num del ultimo.
+	sendMsg("215 listado de los grupos en formato “nombre ultimo primero fecha descipcion”");
+
 	DIR* d;
 	struct dirent *dir;
 	d = opendir("./articulos");
 	if(d){
 		while((dir = readdir(d)) != NULL){
-			printf("%s", dir->d_name);
-			sprintf(buf, "\n%s", dir->d_name);
+			//printf("%s", dir->d_name);
+			//sprintf(buf, "\n%s", dir->d_name);
+			if(strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..")) //Si no es . ni .. enviamos.
+				sendMsg(dir->d_name);
 		}
 		closedir(d);
+		sendMsg(".");
 	}
 }
 

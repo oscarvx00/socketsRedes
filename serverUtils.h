@@ -3,8 +3,9 @@
 
 #include "cola.h"
 
-void commandIn(char *bf);
+void commandIn(int sockfd, char *bf, size_t len, int flags, char* hostname);
 Cola splitCommand(char *bf);
+void sendMsg(char* msg);
 
 void commandList();
 

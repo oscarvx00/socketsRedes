@@ -20,7 +20,7 @@
 
 #include "serverUtils.h"
 
-#define PUERTO 8439
+#define PUERTO 8438
 #define ADDRNOTFOUND	0xffffffff	/* return address for unfound host */
 #define BUFFERSIZE	1024	/* maximum size of packets to be received */
 #define TAM_BUFFER 512
@@ -347,6 +347,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * how the server will know that no more requests will
 		 * follow, and the loop will be exited.
 		 */
+
 	while (len = recv(s, buf, TAM_BUFFER, 0)) {
 		if (len == -1) errout(hostname); /* error from recv */
 			/* The reason this while loop exists is that there
@@ -379,12 +380,12 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			
 			
 			
-			commandIn(buf);
+			commandIn(s, buf, TAM_BUFFER, 0, hostname);
 			
 			
 			
 			
-		if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) errout(hostname);
+		
 	}
 
 		/* The loop has terminated, because there are no
