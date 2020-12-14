@@ -9,5 +9,7 @@ void sendMsg(char* msg);
 
 void commandList();
 
+void erroutUtils(char *);		/* declare error out routine */
+
 
 #endif

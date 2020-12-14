@@ -62,15 +62,21 @@ void commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 		sendMsg("500 Comando no conocido");
 	}
 
-	//strcpy(bf, "SALGO");
+	strcpy(bf, "SALGO");
 
 }
 
 void sendMsg(char* msg){
+	printf ("\033[32;1m %s \033[0m\n", msg);
 
-	if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) errout(hostNameGlobal);
+	if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) erroutUtils(hostNameGlobal);
 }
 
+void erroutUtils(char *hostname)
+{
+	printf("Connection with %s aborted on error\n", hostNameGlobal);
+	exit(1);     
+}
 
 Cola splitCommand(char *bf){
 

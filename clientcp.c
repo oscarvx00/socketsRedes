@@ -55,6 +55,11 @@ char *argv[];
 		exit(1);
 	}
 
+	while(1){
+		
+		printf("\n\nIntroduce comando: ");
+		scanf("%s", buf);
+
 	/* Create the socket. */
 	s = socket (AF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
@@ -95,6 +100,9 @@ char *argv[];
 		/* Try to connect to the remote server at the address
 		 * which was just built into peeraddr.
 		 */
+
+	
+	
 	if (connect(s, (const struct sockaddr *)&servaddr_in, sizeof(struct sockaddr_in)) == -1) {
 		perror(argv[0]);
 		fprintf(stderr, "%s: unable to connect to remote\n", argv[0]);
@@ -107,6 +115,8 @@ char *argv[];
 		 * because getsockname returns the actual length
 		 * of the address.
 		 */
+
+
 	addrlen = sizeof(struct sockaddr_in);
 	if (getsockname(s, (struct sockaddr *)&myaddr_in, &addrlen) == -1) {
 		perror(argv[0]);
@@ -122,13 +132,12 @@ char *argv[];
 	 * that this program could easily be ported to a host
 	 * that does require it.
 	 */
+
 	printf("Connected to %s on port %u at %s",
 			argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 
-	while(1){
-
-		printf("\nIntroduce comado: ");
-		scanf("%s", buf);
+		//printf("\nIntroduce comado: ");
+		//scanf("%s", buf);
 		//for (i=20; i<=25; i++) {
 			//*buf = i;
 			//strcpy(buf, "LIST c");

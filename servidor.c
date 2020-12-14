@@ -221,6 +221,7 @@ char *argv[];
         				exit(1);
         			case 0:		/* Child process comes here. */
                     			close(ls_TCP); /* Close the listen socket inherited from the daemon. */
+								printf("SERVER: New Socket");
         				serverTCP(s_TCP, clientaddr_in);
         				exit(0);
         			default:	/* Daemon process comes here. */
@@ -383,10 +384,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			commandIn(s, buf, TAM_BUFFER, 0, hostname);
 			
 			
+			printf("SERVER HERE");
 			
-			
-		
-	}
+	}		
+
 
 		/* The loop has terminated, because there are no
 		 * more requests to be serviced.  As mentioned above,
