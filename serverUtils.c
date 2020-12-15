@@ -22,7 +22,9 @@ size_t lenGlobal;
 int flagGlobal;
 char* hostNameGlobal;
 
-void commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
+int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
+
+	int serverFlag = 1;
 
 	static char lastCommand[32];
 
@@ -33,8 +35,11 @@ void commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 	hostNameGlobal = hostName;
 
 	//SE DEBE SPLITEAR PREVIAMENTE
-	char bfCopy[512];
-	strcpy(bfCopy, bf);
+
+		/*printf("\033[0;31m");
+		printf("COMMAND IN: %s", bf);
+		printf("\033[0m");*/
+	
 	
 	Cola c = splitCommand(bf);
 	
@@ -47,7 +52,13 @@ void commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 	} else if(strcmp(command, "NEWNEWS") == 0){
 		//comando NEWNEWS
 	} else if(strcmp(command, "GROUP") == 0){
-		//comando GROUP
+		if(!colaVacia(&c)){
+			char* str = colaSuprime(&c);
+			commandGroup(str);
+		} else{
+			sendMsg("501 Error de sintaxis en GROUP newsgroup");
+		}
+		//commandGroup(c);
 	} else if(strcmp(command, "ARTICLE") == 0){
 		//comando ARTICLE
 	} else if(strcmp(command, "HEAD") == 0){
@@ -57,12 +68,15 @@ void commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 	} else if(strcmp(command, "POST") == 0){
 		//comando POST
 	} else if(strcmp(command, "QUIT") == 0){
-		//comando QUIT
+		sendMsg("205 Adios");
+		serverFlag = 0;
 	} else{
 		sendMsg("500 Comando no conocido");
 	}
 
-	strcpy(bf, "SALGO");
+	sendMsg(".");
+
+	return serverFlag;
 
 }
 
@@ -82,14 +96,17 @@ Cola splitCommand(char *bf){
 
 	Cola c;
 	
+	char bfCopy[512];
+	strcpy(bfCopy, bf);
+
 	if(colaCreaVacia(&c) != 0){
 		printf("\033[0;31m");
-		printf("ERROR CREANDO COLA");
+		printf("ERROR CREANDO COLA COMMAND");
 		printf("\033[0m");
-		//exit(-1);
+		exit(-1);
 	}
 
-	char* token = strtok(bf, " ");
+	char* token = strtok(bfCopy, " ");
 
 	while(token != NULL){
 	//printf("\n%s", token);
@@ -97,8 +114,6 @@ Cola splitCommand(char *bf){
 		token = strtok(NULL, " ");
 	}
 
-	
-	
 	return c;
 }
 
@@ -107,7 +122,7 @@ void commandList(char *buf){
 	//Devolver nombre de grupo, num de articulos, num del primero y num del ultimo.
 	sendMsg("215 listado de los grupos en formato “nombre ultimo primero fecha descipcion”");
 
-	DIR* d;
+	/*DIR* d;
 	struct dirent *dir;
 	d = opendir("./articulos");
 	if(d){
@@ -118,7 +133,18 @@ void commandList(char *buf){
 				sendMsg(dir->d_name);
 		}
 		closedir(d);
-		sendMsg(".");
+	}*/
+
+	FILE *f;
+
+	char buff[lenGlobal];
+
+	if((f = fopen("grupos", "r")) == NULL){
+		perror("Error abriendo archivo");
+	} else{
+		while(fgets(buff, lenGlobal, f) != NULL){
+			sendMsg(buff);
+		}
 	}
 }
 
@@ -136,17 +162,71 @@ void commandNewnews(Cola c){
 	char *groupName = colaSuprime(&c);
 	char *date = colaSuprime(&c);
 	char *time = colaSuprime(&c);
-
+sendMsg(".");
 	//Consulta articulos disponibles del grupo a partir del dia y hora;
 
 }
 
-void commandGroup(Cola c){
+void commandGroup(char* str){
 
-	char *groupName = colaSuprime(&c);
+	//Consulta los articulos del grupo, devolviendo numero de articulos, numero del primero y del ultimo
 
-	//Consulta los articulos del grupo, devolviendo numero del primero y del ultimo
+	Cola c = splitGroup(str);
+	char fileStart[] = "./";
+	char *location;
 
+	char *tema, *subtema;
+	if(!colaVacia(&c)){
+		tema = colaSuprime(&c);
+	} else{ 
+		sendMsg("501 Error de sintaxis en GROUP newsgroup");
+		return;
+	}
+	if(!colaVacia(&c)){
+		subtema = colaSuprime(&c);
+	} else{
+		sendMsg("501 Error de sintaxis en GROUP newsgroup");
+		return;
+	}
+
+	location = malloc(strlen(fileStart) + strlen(tema) + strlen(subtema) + 2);
+	
+	//sprintf(location, "%s/%s", tema, subtema);
+	strcpy(location, fileStart);
+	strcat(location, tema);
+	strcat(location, "/");
+	strcat(location, subtema);
+
+	printf("SERVER LOC: %s",location);
+	
+
+}
+
+Cola splitGroup(char *bf){
+
+	Cola cola;
+
+	char bfCopy[512];
+	strcpy(bfCopy, bf);
+
+	printf("BFCOPY %s", bfCopy);
+
+	if(colaCreaVacia(&cola) != 0){
+		printf("\033[0;31m");
+		printf("ERROR CREANDO COLA GROUP");
+		printf("\033[0m");
+		exit(-1);
+	}
+
+	char* token = strtok(bfCopy, ".");
+
+	while(token != NULL){
+	//printf("\nTOKEEEN: %s", token);
+		colaInserta(&cola, token);
+		token = strtok(NULL, ".");
+	}
+
+	return cola;
 }
 
 void commandArticle(Cola c){

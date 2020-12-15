@@ -5,8 +5,8 @@ test: test.c serverUtils.o serverUtils.h cola.h cola.o
 servidor: servidor.c serverUtils.o serverUtils.h
 	gcc -g servidor.c serverUtils.o cola.o -o server
 	
-serverUtils.o: serverUtils.h serverUtils.c
-	gcc -c serverUtils.c
+serverUtils.o: serverUtils.h serverUtils.c cola.o
+	gcc -g -c serverUtils.c
 	
 cola.o: cola.h cola.c
-	gcc -c cola.c
+	gcc -g -c cola.c

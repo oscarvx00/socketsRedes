@@ -55,10 +55,7 @@ char *argv[];
 		exit(1);
 	}
 
-	while(1){
-		
-		printf("\n\nIntroduce comando: ");
-		scanf("%s", buf);
+
 
 	/* Create the socket. */
 	s = socket (AF_INET, SOCK_STREAM, 0);
@@ -136,6 +133,13 @@ char *argv[];
 	printf("Connected to %s on port %u at %s",
 			argv[1], ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
 
+	int flag = 1;		
+
+	while(flag){
+	
+	printf("\n\nIntroduce comando: ");
+	gets(buf);
+
 		//printf("\nIntroduce comado: ");
 		//scanf("%s", buf);
 		//for (i=20; i<=25; i++) {
@@ -154,11 +158,11 @@ char *argv[];
 			* have just been sent, indicating that we will not be
 			* sending any further requests.
 			*/
-		if (shutdown(s, 1) == -1) {
+		/*if (shutdown(s, 1) == -1) {
 			perror(argv[0]);
 			fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
 			exit(1);
-		}
+		}*/
 
 			/* Now, start receiving all of the replys from the server.
 			* This loop will terminate when the recv returns zero,
@@ -166,11 +170,19 @@ char *argv[];
 			* after the server has sent all of its replies, and closed
 			* its end of the connection.
 			*/
-		while (i = recv(s, buf, TAM_BUFFER, 0)) {
+		//while (i = recv(s, buf, TAM_BUFFER, 0)) {
+		//int numReceived;
+
+		do{	
+			i = recv(s, buf, TAM_BUFFER, 0);
 			if (i == -1) {
 				perror(argv[0]);
 				fprintf(stderr, "%s: error reading result\n", argv[0]);
 				exit(1);
+			} else if(i == 0){//EOF
+				flag = 0;
+				//printf("CLIENTE SALE");
+				break;
 			}
 				/* The reason this while loop exists is that there
 				* is a remote possibility of the above recv returning
@@ -195,11 +207,16 @@ char *argv[];
 				}
 				i += j;
 			}
+
+			printf("\nC: %s", buf);
+		} while(strcmp(buf, "."));
 				/* Print out message indicating the identity of this reply. */
 			//printf("Received result number %d\n", *buf);
-			printf("\nC: %s", buf);
-		}
+			
+		//}
 	}
+
+	close(s);
 
     /* Print message indicating completion of task. */
 	time(&timevar);

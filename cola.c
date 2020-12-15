@@ -31,6 +31,8 @@ int colaInserta(Cola *c,tipoElemento elemento)
 	if((nuevo = malloc(sizeof(tipoCelda))) == NULL)		return -1;
 	
 	nuevo->elemento = elemento;
+	nuevo->sig = NULL;
+	
 	
 	if(c->fondo != NULL)	c->fondo->sig = nuevo;
 	c->fondo = nuevo;

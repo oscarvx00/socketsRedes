@@ -348,9 +348,12 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * how the server will know that no more requests will
 		 * follow, and the loop will be exited.
 		 */
-
-	while (len = recv(s, buf, TAM_BUFFER, 0)) {
-		if (len == -1) errout(hostname); /* error from recv */
+		int flag = 1;
+while(flag){
+	//while (len = recv(s, buf, TAM_BUFFER, 0)) {
+		len = recv(s, buf, TAM_BUFFER, 0);
+		if (len == -1) errout(hostname);
+		//else if(len == 0) break; /* error from recv */
 			/* The reason this while loop exists is that there
 			 * is a remote possibility of the above recv returning
 			 * less than TAM_BUFFER bytes.  This is because a recv returns
@@ -365,11 +368,12 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			 * next recv at the top of the loop will start at
 			 * the begining of the next request.
 			 */
-		while (len < TAM_BUFFER) {
+		/*while (len < TAM_BUFFER) {
 			len1 = recv(s, &buf[len], TAM_BUFFER-len, 0);
 			if (len1 == -1) errout(hostname);
 			len += len1;
-		}
+		}*/
+		buf[len] = '\0';
 			/* Increment the request count. */
 		reqcnt++;
 			
@@ -379,15 +383,12 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			*
 			**/
 			
+			printf("BUFFER SERVER: %s", buf);
 			
+			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname);			
 			
-			commandIn(s, buf, TAM_BUFFER, 0, hostname);
-			
-			
-			printf("SERVER HERE");
-			
-	}		
-
+	//}		
+}
 
 		/* The loop has terminated, because there are no
 		 * more requests to be serviced.  As mentioned above,
@@ -399,8 +400,13 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * times printed in the log file to reflect more accurately
 		 * the length of time this connection was used.
 		 */
-	close(s);
+	//close(s);
 
+	if (shutdown(s, 1) == -1) {
+			//perror(argv[0]);
+			//fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
+			exit(1);
+	}
 		/* Log a finishing message. */
 	time (&timevar);
 		/* The port number must be converted first to host byte
