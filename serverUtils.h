@@ -12,6 +12,8 @@ void commandNewgroups(Cola c);
 void commandNewnews(Cola c);
 void commandGroup(char* str);
 Cola splitGroup(char *bf);
+void commandArticle(char *str);
+//char* findArticle(const char *folder, const char *articleNumber);
 
 void erroutUtils(char *);		/* declare error out routine */
 

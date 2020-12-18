@@ -383,7 +383,7 @@ while(flag){
 			*
 			**/
 			
-			printf("BUFFER SERVER: %s", buf);
+			//printf("BUFFER SERVER: %s", buf);
 			
 			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname);			
 			

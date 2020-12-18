@@ -17,7 +17,7 @@ int colaCreaVacia(Cola *c)
 int colaVacia(Cola *c)
 {
     if(c == NULL)		return -1;
-    if(c->frente == NULL)	return 1;
+    if(c->frente == NULL && c->fondo == NULL)	return 1;
     
     return 0;
     

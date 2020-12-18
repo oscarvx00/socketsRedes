@@ -138,7 +138,10 @@ char *argv[];
 	while(flag){
 	
 	printf("\n\nIntroduce comando: ");
-	gets(buf);
+	char *pos;
+	fgets(buf, 512, stdin);
+	if ((pos=strchr(buf, '\n')) != NULL)
+    *pos = '\0';
 
 		//printf("\nIntroduce comado: ");
 		//scanf("%s", buf);
@@ -207,9 +210,9 @@ char *argv[];
 				}
 				i += j;
 			}
-
-			printf("\nC: %s", buf);
-		} while(strcmp(buf, "."));
+			if(strcmp(buf, "\r\n"))	printf("\nC: %s", buf);
+				
+		} while(strcmp(buf, "\r\n"));
 				/* Print out message indicating the identity of this reply. */
 			//printf("Received result number %d\n", *buf);
 			
