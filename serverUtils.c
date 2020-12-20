@@ -40,16 +40,12 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 		printf("\033[0m");*/
 	
 	
-	Cola c = splitCommand(bf);
+	Cola c = splitLine(bf, " ");
 	
 	char* command = colaSuprime(&c);
 	
 	if(strcmp(/*inputCommand result of split*/command, "LIST") == 0){
 		commandList(bf);
-	} else if(strcmp(command, "NEWGROUPS") == 0){
-	 	//comando newgroups
-	} else if(strcmp(command, "NEWNEWS") == 0){
-		//comando NEWNEWS
 	} else if(strcmp(command, "GROUP") == 0){
 		if(!colaVacia(&c)){
 			char* str = colaSuprime(&c);
@@ -65,9 +61,51 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 			sendMsg("501 Error de sintaxis en ARTICLE numArticle");
 		}
 	} else if(strcmp(command, "HEAD") == 0){
-		//comando HEAD
+		if(!colaVacia(&c)){
+			char *str = colaSuprime(&c);
+			commandHead(str);
+		} else{
+			sendMsg("501 Error de sintaxis en HEAD numArticle");
+		}
 	} else if(strcmp(command, "BODY") == 0){
-		//comando BODY
+		if(!colaVacia(&c)){
+			char *str = colaSuprime(&c);
+			commandBody(str);
+		} else{
+			sendMsg("501 Error de sintaxis en BODY numArticle");
+		}
+	} else if(strcmp(command, "NEWGROUPS") == 0){
+		char *date, *time;
+		if(!colaVacia(&c)){
+			date = colaSuprime(&c);
+			if(!colaVacia(&c)){
+				time = colaSuprime(&c);
+				commandNewGroups(date, time);
+			} else{
+				sendMsg("501 Error de sintaxis en NEWGROUPS date(aaaammdd) time(hhmmss)");
+			}
+		} else{
+			sendMsg("501 Error de sintaxis en NEWGROUPS date(aaaammdd) time(hhmmss)");
+		}
+	} else if(strcmp(command, "NEWNEWS") == 0){
+		char *location, *date, *time;
+		if(!colaVacia(&c)){
+			location = colaSuprime(&c);
+			if(!colaVacia(&c)){
+				date = colaSuprime(&c);
+				if(!colaVacia(&c)){
+					time = colaSuprime(&c);
+					commandNewNews(location, date, time);
+				}else{
+				sendMsg("501 Error de sintaxis en NEWNEWS newsgroup date(aaaammdd) time(hhmmss)");
+				}
+			}
+			else{
+				sendMsg("501 Error de sintaxis en NEWNEWS newsgroup date(aaaammdd) time(hhmmss)");
+			}
+		} else{
+			sendMsg("501 Error de sintaxis en NEWNEWS newsgroup date(aaaammdd) time(hhmmss)");
+		}
 	} else if(strcmp(command, "POST") == 0){
 		//comando POST
 	} else if(strcmp(command, "QUIT") == 0){
@@ -102,14 +140,14 @@ void erroutUtils(char *hostname)
 	exit(1);     
 }
 
-Cola splitCommand(char *bf){
+Cola splitLine(char *bf, char *character){
 
 	Cola c;
 	
 	char bfCopy[512];
 	strcpy(bfCopy, bf);
 
-	printf("BUFFER: %s\nCOPY: %s\nCOMP: %d", bf, bfCopy, strcmp(bf, bfCopy));
+	//printf("BUFFER: %s\nCOPY: %s\nCOMP: %d", bf, bfCopy, strcmp(bf, bfCopy));
 
 	if(colaCreaVacia(&c) != 0){
 		printf("\033[0;31m");
@@ -119,16 +157,17 @@ Cola splitCommand(char *bf){
 	}
 	colaCreaVacia(&c);
 
-	char* token = strtok(bfCopy, " ");
+	char* token = strtok(bfCopy, character);
 
 	while(token != NULL){
 	//printf("\n%s", token);
 		colaInserta(&c, token);
-		token = strtok(NULL, " ");
+		token = strtok(NULL, character);
 	}
 
 	return c;
 }
+
 
 void commandList(char *buf){
 
@@ -149,24 +188,6 @@ void commandList(char *buf){
 	sendMsg(".");
 }
 
-void commandNewgroups(Cola c){
-
-	char *date = colaSuprime(&c);
-	char *time = colaSuprime(&c);
-
-	//Consulta los grupos disponibles desde la hora indicada
-
-}
-
-void commandNewnews(Cola c){
-
-	char *groupName = colaSuprime(&c);
-	char *date = colaSuprime(&c);
-	char *time = colaSuprime(&c);
-	sendMsg(".");
-	//Consulta articulos disponibles del grupo a partir del dia y hora;
-
-}
 
 void commandGroup(char* str){
 
@@ -174,7 +195,7 @@ void commandGroup(char* str){
 	char *groupInput = malloc(strlen(str));
 	strcpy(groupInput, str);
 
-	Cola c = splitGroup(str);
+	Cola c = splitLine(str, ".");
 	char fileStart[] = "./articulos/";
 	char *location;
 
@@ -200,7 +221,7 @@ void commandGroup(char* str){
 	strcat(location, "/");
 	strcat(location, subtema);
 
-	printf("LOCATION: %s", location);
+	//printf("LOCATION: %s", location);
 
 	selectedGroupPath = malloc(strlen(location));
 	strcpy(selectedGroupPath, location);
@@ -230,7 +251,7 @@ void commandGroup(char* str){
 		closedir(d);
 
 		msg = malloc(512);
-		sprintf(msg, "%d %d %05d %05d %s", 211, count, first, last, groupInput);
+		sprintf(msg, "%d %d %010d %010d %s", 211, count, first, last, groupInput);
 
 		sendMsg(msg);
 	} else{
@@ -239,32 +260,6 @@ void commandGroup(char* str){
 
 }
 
-Cola splitGroup(char *bf){
-
-	Cola cola;
-
-	char bfCopy[512];
-	strcpy(bfCopy, bf);
-
-	printf("BFCOPY %s", bfCopy);
-
-	if(colaCreaVacia(&cola) != 0){
-		printf("\033[0;31m");
-		printf("ERROR CREANDO COLA GROUP");
-		printf("\033[0m");
-		exit(-1);
-	}
-
-	char* token = strtok(bfCopy, ".");
-
-	while(token != NULL){
-	//printf("\nTOKEEEN: %s", token);
-		colaInserta(&cola, token);
-		token = strtok(NULL, ".");
-	}
-
-	return cola;
-}
 
 void commandArticle(char *str){
 
@@ -325,18 +320,12 @@ void commandArticle(char *str){
 							sendMsg(buff);
 
 						}
-						fclose(c);
+						fclose(f);
 					}
-					//sendMsg("\r\n");
 				}
 			}
 		}
 	}
-
-	//printf("\n\n\n\nARTICLE PATH: %s", path);
-	//sendMsg(path);
-
-
 }
 
 /*char* findArticle(const char *folder, const char *articleNumber){
@@ -377,17 +366,293 @@ void commandArticle(char *str){
 	return NULL;
 }*/
 
-void commandHead(Cola c){
+void commandHead(char *str){
 
-	char *articleNum = colaSuprime(&c);
+	char *articleNumber;
+	articleNumber = malloc(strlen(str) + 1);
+	strcpy(articleNumber, str);
 
-	//Devuelve la cabecera del articulo
+	char buff[lenGlobal];
+
+	if(selectedGroupPath == NULL){
+		sendMsg("500 No se ha seleccionado ningun grupo (GROUP)");
+		return;
+	} 
+
+	DIR *d;
+	struct dirent *dir;
+
+	d = opendir(selectedGroupPath);
+
+	char *path;
+
+	if(d){
+		while((dir = readdir(d)) != NULL){
+			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
+				//printf("\n\tSUBFOLDER: %s", dir->d_name);
+
+				if(!strcmp(articleNumber, dir->d_name)){
+					char *path;
+					if((path = malloc(strlen(selectedGroupPath) + 2 + strlen(dir->d_name))) == NULL){
+							fprintf(stderr, "ERROR MALLOC");
+							exit(-1);
+					}
+						
+					strcpy(path, selectedGroupPath);
+					strcat(path, "/");
+					strcat(path, dir->d_name);
+
+					//Lectura y envio del articulo
+					char *initialMsg = malloc(300);
+					strcpy(initialMsg, "223 ");
+					strcat(initialMsg, articleNumber);
+					strcat(initialMsg, " articulo recuperado");
+					sendMsg(initialMsg);
+
+					FILE *f;
+
+					
+
+					if((f = fopen(path, "r")) == NULL){
+						perror("Error abriendo archivo");
+					} else{
+						fseek(f, 0, SEEK_SET);
+						int flag = 1;
+						while(fgets(buff, lenGlobal, f) && flag){
+							
+							if(!strcmp(buff, "\r\n") || !strcmp(buff, "\n")){
+								flag = 0;
+							} else{
+								sendMsg(buff);
+							}
+
+						}
+						fclose(f);
+					}
+				}
+			}
+		}
+	}
 }
 
-void commandBody(Cola c){
+void commandBody(char *str){
 
-	char *articleNum = colaSuprime(&c);
+	char *articleNumber;
+	articleNumber = malloc(strlen(str) + 1);
+	strcpy(articleNumber, str);
 
-	//Devuelve el cuerpo del articulo
+	char buff[lenGlobal];
+
+	if(selectedGroupPath == NULL){
+		sendMsg("500 No se ha seleccionado ningun grupo (GROUP)");
+		return;
+	} 
+
+	DIR *d;
+	struct dirent *dir;
+
+	d = opendir(selectedGroupPath);
+
+	char *path;
+
+	if(d){
+		while((dir = readdir(d)) != NULL){
+			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
+				//printf("\n\tSUBFOLDER: %s", dir->d_name);
+
+				if(!strcmp(articleNumber, dir->d_name)){
+					char *path;
+					if((path = malloc(strlen(selectedGroupPath) + 2 + strlen(dir->d_name))) == NULL){
+							fprintf(stderr, "ERROR MALLOC");
+							exit(-1);
+					}
+						
+					strcpy(path, selectedGroupPath);
+					strcat(path, "/");
+					strcat(path, dir->d_name);
+
+					//Lectura y envio del articulo
+					char *initialMsg = malloc(300);
+					strcpy(initialMsg, "223 ");
+					strcat(initialMsg, articleNumber);
+					strcat(initialMsg, " articulo recuperado");
+					sendMsg(initialMsg);
+
+					FILE *f;
+
+					
+
+					if((f = fopen(path, "r")) == NULL){
+						perror("Error abriendo archivo");
+					} else{
+						fseek(f, 0, SEEK_SET);
+						int bodyReached = 0;
+						while(fgets(buff, lenGlobal, f)){							
+							if(!strcmp(buff, "\r\n") || !strcmp(buff, "\n")){
+								bodyReached = 1;
+							} else if(bodyReached){
+								sendMsg(buff);
+							}
+						}
+						fclose(f);
+					}
+				}
+			}
+		}
+	}
 }
+
+
+void commandNewGroups(char *date, char *time){
+
+	FILE *f;
+
+	struct grupo gStruc;
+
+	int d, t;
+	d = atoi(date);
+	t = atoi(time);
+
+	sendMsg("231 Nuevos grupos");
+
+	if((f = fopen("grupos", "r")) == NULL){
+		perror("Error abriendo archivo");
+	} else{
+		while(fscanf(f, "%s %d %d %d %d %[^\n]", gStruc.loc, &gStruc.last, &gStruc.first, &gStruc.date, &gStruc.time, gStruc.descr) != EOF){
+			if(gStruc.date > d && gStruc.time >= t)
+				sendMsg(gStruc.loc);
+		}
+	}
+	sendMsg(".");
+
+}
+
+
+void commandNewNews(char *loc, char *date, char *time){
+
+
+	char buff[lenGlobal];
+
+	char *groupInput = malloc(strlen(loc));
+	strcpy(groupInput, loc);
+
+	Cola c = splitLine(loc, ".");
+	char fileStart[] = "./articulos/";
+	char *location;
+
+
+
+	int dateInt = atoi(date);
+	int timeInt = atoi(time);
+
+	char *tema, *subtema;
+	if(!colaVacia(&c)){
+		tema = colaSuprime(&c);
+	} else{ 
+		sendMsg("501 Error de sintaxis en GROUP newsgroup");
+		return;
+	}
+	if(!colaVacia(&c)){
+		subtema = colaSuprime(&c);
+	} else{
+		sendMsg("501 Error de sintaxis en GROUP newsgroup");
+		return;
+	}
+
+	location = malloc(strlen(fileStart) + strlen(tema) + strlen(subtema) + 2);
 	
+	//sprintf(location, "%s/%s", tema, subtema);
+	strcpy(location, fileStart);
+	strcat(location, tema);
+	strcat(location, "/");
+	strcat(location, subtema);
+
+	//printf("LOCATION: %s", location);
+
+	
+	DIR *d;
+	FILE *f;
+	struct dirent *dir;
+	d = opendir(location);
+
+	int first;
+	int last;
+	int count = 0;
+
+	char *msg;
+	if(d){
+		while((dir = readdir(d)) != NULL){
+			//printf("%s", dir->d_name);
+			//sprintf(buf, "\n%s", dir->d_name);
+			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
+				
+				char *path;
+				if((path = malloc(strlen(location) + 4 + strlen(dir->d_name))) == NULL){
+						fprintf(stderr, "ERROR MALLOC");
+						exit(-1);
+				}
+					
+				strcpy(path, location);
+				strcat(path, "/");
+				strcat(path, dir->d_name);				
+
+				if((f = fopen(path, "r")) == NULL){
+						perror("Error abriendo archivo");
+				} 
+				else{
+					
+					//fseek(f, 0, SEEK_SET);
+					int rowCount = 0;
+					char *d, *t;
+					char *subject, *id;
+					while(fgets(buff, lenGlobal, f) && rowCount < 4 /*Leemos la cabecera*/){
+						if(rowCount == 2){
+							Cola cF = splitLine(buff, " ");
+							int colaCount = 0;
+							while(!colaVacia(&cF) && colaCount < 3){
+								if(colaCount == 1){
+									d = colaSuprime(&cF);
+								} else if(colaCount == 2){
+									t = colaSuprime(&cF);
+								} else{
+									colaSuprime(&cF);
+								}
+								colaCount++;
+							}
+						} else if(rowCount == 1){
+							if((subject = malloc(strlen(buff) + 4)) == NULL){
+								fprintf(stderr, "ERROR MALLOC");
+								exit(-1);
+							}
+							strcpy(subject, buff);
+						} else if(rowCount == 3){
+							if((id = malloc(strlen(buff) + 4)) == NULL){
+								fprintf(stderr, "ERROR MALLOC");
+								exit(-1);
+							}
+							strcpy(id, buff);
+						}
+						rowCount++;
+
+					}
+					fclose(f);
+					
+					if(dateInt <= atoi(d) && timeInt <= atoi(t)){
+						//Enviar MSG
+						snprintf(buff, lenGlobal, "%s %s %s", dir->d_name, subject, id);
+						//strcpy(buff, dir->d_name);
+						//strcat(buff, " ");
+						//strcpy(buff, subject);
+						sendMsg(buff);
+					}
+					free(subject); free(id);
+				}
+				free(path);
+			}
+		}
+		closedir(d);
+
+	} else{
+		sendMsg("501 Error de sintaxis en GROUP newsgroup");
+	}
+}
