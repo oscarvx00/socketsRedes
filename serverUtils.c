@@ -107,7 +107,7 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 			sendMsg("501 Error de sintaxis en NEWNEWS newsgroup date(aaaammdd) time(hhmmss)");
 		}
 	} else if(strcmp(command, "POST") == 0){
-		//comando POST
+		commandPost();
 	} else if(strcmp(command, "QUIT") == 0){
 		sendMsg("205 Adios");
 		serverFlag = 0;
@@ -582,8 +582,6 @@ void commandNewNews(char *loc, char *date, char *time){
 	char *msg;
 	if(d){
 		while((dir = readdir(d)) != NULL){
-			//printf("%s", dir->d_name);
-			//sprintf(buf, "\n%s", dir->d_name);
 			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
 				
 				char *path;
@@ -640,9 +638,6 @@ void commandNewNews(char *loc, char *date, char *time){
 					if(dateInt <= atoi(d) && timeInt <= atoi(t)){
 						//Enviar MSG
 						snprintf(buff, lenGlobal, "%s %s %s", dir->d_name, subject, id);
-						//strcpy(buff, dir->d_name);
-						//strcat(buff, " ");
-						//strcpy(buff, subject);
 						sendMsg(buff);
 					}
 					free(subject); free(id);
@@ -655,4 +650,176 @@ void commandNewNews(char *loc, char *date, char *time){
 	} else{
 		sendMsg("501 Error de sintaxis en GROUP newsgroup");
 	}
+}
+
+
+void commandPost(){
+
+	char buf[lenGlobal];
+	char bufCopy[lenGlobal];
+	char errorCause[200];
+	char fileStart[] = "./articulos/";
+
+	
+	int i,j;
+	int flag = 1;
+	int lineCount = 0;
+	int errorFound = 0;
+
+	char *aux;
+
+	int index;
+
+	DIR *d;
+	FILE *f;
+	struct dirent *dir;
+	char *location;
+
+	int articleNumber = 1;
+
+	sendMsg("240 Subiendo un articulo, finalice con una linea que solo contenga un punto");
+
+
+	do{	
+		i = recv(sockfdGlobal, buf, lenGlobal, flagGlobal);
+		if (i == -1) {
+			perror("ERROR RECV");
+			exit(1);
+		} else if(i == 0){//EOF
+			flag = 0;
+			//printf("CLIENTE SALE");
+			break;
+		}
+
+		buf[i] = '\0';
+
+		strcpy(bufCopy, buf);
+
+
+		/*while (i < lenGlobal) {
+			j = recv(sockfdGlobal, &buf[i], lenGlobal-i, flagGlobal);
+			if (j == -1) {
+					perror("ERROR RECV");
+					exit(1);
+			}
+			i += j;
+		}*/
+		//printf("\nS: %s", buf);
+		if(!errorFound){
+			if(lineCount == 0){
+				//Newsgroups, acceder a ruta y crear nuevo archivo
+				Cola cM = splitLine(buf, " ");
+				if(!colaVacia(&cM)){
+					aux = colaSuprime(&cM);
+					if(strcmp(aux, "Newsgroups:")){
+						errorFound = 1;
+						strcpy(errorCause, "No se ha detectado Newsgroups: en la primera linea");
+					} else{
+						if(!colaVacia(&cM)){
+							aux = colaSuprime(&cM);
+
+							index = 0;
+							while(aux[index] != '\0'){
+								if(aux[index] == '.'){
+									aux[index] = '/';
+								}
+								index++;
+							}
+
+							location = malloc(strlen(fileStart) + strlen(aux) + 10);
+							strcpy(location, fileStart);
+							strcat(location, aux);
+
+							d = opendir(location);
+
+							if(d){
+								while((dir = readdir(d)) != NULL){
+									//printf("%s", dir->d_name);
+									//sprintf(buf, "\n%s", dir->d_name);
+									if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
+										int num = atoi(dir->d_name);
+										if(num > articleNumber){
+											articleNumber = num;
+										}
+									}
+								}								
+
+								closedir(d);
+
+								articleNumber++;
+								char *articleNumberStr = malloc(10);
+								snprintf(articleNumberStr, 10, "/%d", articleNumber);
+
+								strcat(location, articleNumberStr);
+
+								if((f = fopen(location, "w+")) == NULL){
+									errorFound = 1;
+									strcpy(errorCause, "Error fopen");
+									perror("fopen: ");
+								} else{
+									fputs(bufCopy, f);
+									fputc('\n', f);
+								}
+							}
+
+
+						} else{
+							errorFound = 1;
+							strcpy(errorCause, "No se ha detectado Newsgroups: (group) en la primera linea");
+						}
+					}
+				} else{
+					errorFound = 1;
+					strcpy(errorCause, "No se ha detectado Newsgroups: (group) en la primera linea");
+				}
+			} else if(lineCount == 1){
+				aux = strtok(buf, " ");
+
+				if(aux == NULL || strcmp(aux, "Subject:")){
+					errorFound = 1;
+					strcpy(errorCause, "No se ha detectado Subject: en la segunda linea");
+				} else{
+					fputs(bufCopy, f);
+					fputc('\n', f);
+
+					//Colocamos Date despues de subject.
+					time_t t = time(NULL);
+					struct tm tms = *localtime(&t);
+					snprintf(buf, lenGlobal, "Date: %d%02d%02d %02d%02d%02d", tms.tm_year + 1900, tms.tm_mon +1, tms.tm_mday, tms.tm_hour, tms.tm_min, tms.tm_sec);
+					fputs(buf, f);
+					fputc('\n', f);
+
+					//Colocamos el Message-ID
+
+					snprintf(buf, lenGlobal, "Message-ID: <%d@%s>", articleNumber, hostNameGlobal);
+					fputs(buf, f);
+					fputc('\n', f);
+
+				}
+			} else{
+				fputs(bufCopy, f);
+				fputc('\n', f);
+			}
+
+
+			lineCount++;
+		}
+			
+	} while(strcmp(bufCopy, ".") && flag);
+
+
+	if(!errorFound){
+		sendMsg("240 Articulo recibido correctamente.");
+		//sendMsg(location);
+	} else{
+		sendMsg(errorCause);
+	}
+
+	if(f != NULL){
+		fclose(f);
+		if(errorFound){
+			remove(location);
+		}
+	}	
+
 }

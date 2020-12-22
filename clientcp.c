@@ -25,6 +25,8 @@
 #define PUERTO 8438
 #define TAM_BUFFER 512
 
+void functionPost(int s);
+
 /*
  *			M A I N
  *
@@ -153,6 +155,11 @@ char *argv[];
 				fprintf(stderr, "on send number %d\n", i);
 				exit(1);
 			}
+
+			if(!strcmp(buf, "POST")){
+				//POSTING
+				functionPost(s);
+			}
 		//}
 
 			/* Now, shutdown the connection for further sends.
@@ -224,4 +231,62 @@ char *argv[];
     /* Print message indicating completion of task. */
 	time(&timevar);
 	printf("All done at %s", (char *)ctime(&timevar));
+}
+
+void functionPost(int s){
+
+	char buf[TAM_BUFFER];
+	char *pos;
+
+	int i, j;
+	//Recibimos mensaje de confirmacion
+
+	i = recv(s, buf, TAM_BUFFER, 0);
+			if (i == -1) {
+				//perror(argv[0]);
+				//fprintf(stderr, "%s: error reading result\n", argv[0]);
+				exit(1);
+			} else if(i == 0){//EOF
+				//flag = 0;
+				//printf("CLIENTE SALE");
+				//break;
+			}
+				/* The reason this while loop exists is that there
+				* is a remote possibility of the above recv returning
+				* less than TAM_BUFFER bytes.  This is because a recv returns
+				* as soon as there is some data, and will not wait for
+				* all of the requested data to arrive.  Since TAM_BUFFER bytes
+				* is relatively small compared to the allowed TCP
+				* packet sizes, a partial receive is unlikely.  If
+				* this example had used 2048 bytes requests instead,
+				* a partial receive would be far more likely.
+				* This loop will keep receiving until all TAM_BUFFER bytes
+				* have been received, thus guaranteeing that the
+				* next recv at the top of the loop will start at
+				* the begining of the next reply.
+				*/
+			while (i < TAM_BUFFER) {
+				j = recv(s, &buf[i], TAM_BUFFER-i, 0);
+				if (j == -1) {
+						//perror(argv[0]);
+						//fprintf(stderr, "%s: error reading result\n", argv[0]);
+						exit(1);
+				}
+				i += j;
+			}
+			printf("\nC: %s\n", buf);
+
+
+	do{
+	fgets(buf, 512, stdin);
+	if ((pos=strchr(buf, '\n')) != NULL)
+    *pos = '\0';
+
+			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
+				//fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
+				//fprintf(stderr, "on send number %d\n", i);
+				exit(1);
+			}
+	} while(strcmp(buf, "."));
+
 }

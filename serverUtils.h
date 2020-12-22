@@ -25,7 +25,7 @@ void commandHead(char *str);
 void commandBody(char *str);
 void commandNewGroups(char *date, char *time);
 void commandNewNews(char *location, char *date, char *time);
-//char* findArticle(const char *folder, const char *articleNumber);
+void commandPost();
 
 void erroutUtils(char *);		/* declare error out routine */
 
