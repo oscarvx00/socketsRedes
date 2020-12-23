@@ -195,37 +195,22 @@ void commandGroup(char* str){
 	char *groupInput = malloc(strlen(str));
 	strcpy(groupInput, str);
 
-	Cola c = splitLine(str, ".");
 	char fileStart[] = "./articulos/";
 	char *location;
 
-	char *tema, *subtema;
-	if(!colaVacia(&c)){
-		tema = colaSuprime(&c);
-	} else{ 
-		sendMsg("501 Error de sintaxis en GROUP newsgroup");
-		return;
-	}
-	if(!colaVacia(&c)){
-		subtema = colaSuprime(&c);
-	} else{
-		sendMsg("501 Error de sintaxis en GROUP newsgroup");
-		return;
+	int index = 0;
+
+	while(groupInput[index] != '\0'){
+		if(groupInput[index] == '.'){
+			groupInput[index] = '/';
+		}
+		index++;
 	}
 
-	location = malloc(strlen(fileStart) + strlen(tema) + strlen(subtema) + 2);
+	location = malloc(strlen(fileStart) + strlen(groupInput) + 4);
 	
-	//sprintf(location, "%s/%s", tema, subtema);
 	strcpy(location, fileStart);
-	strcat(location, tema);
-	strcat(location, "/");
-	strcat(location, subtema);
-
-	//printf("LOCATION: %s", location);
-
-	selectedGroupPath = malloc(strlen(location));
-	strcpy(selectedGroupPath, location);
-
+	strcat(location, groupInput);
 	
 	DIR* d;
 	struct dirent *dir;
@@ -238,8 +223,6 @@ void commandGroup(char* str){
 	char *msg;
 	if(d){
 		while((dir = readdir(d)) != NULL){
-			//printf("%s", dir->d_name);
-			//sprintf(buf, "\n%s", dir->d_name);
 			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
 				if(count == 0){
 					first = atoi(dir->d_name);
@@ -258,6 +241,8 @@ void commandGroup(char* str){
 		sendMsg("501 Error de sintaxis en GROUP newsgroup");
 	}
 
+	free(groupInput);
+	free(location);
 }
 
 
@@ -328,43 +313,6 @@ void commandArticle(char *str){
 	}
 }
 
-/*char* findArticle(const char *folder, const char *articleNumber){
-
-	DIR *d;
-	struct dirent *dir;
-
-	d = opendir(folder);
-
-	printf("\nBUSCANDO EN: %s", folder);
-	if(d){
-		while((dir = readdir(d)) != NULL){
-			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
-				printf("\n\tSUBFOLDER: %s", dir->d_name);
-
-				char *path;
-				if((path = malloc(strlen(folder) + 2 + strlen(dir->d_name))) == NULL){
-						fprintf(stderr, "ERROR MALLOC");
-						exit(-1);
-				}
-					
-				strcpy(path, folder);
-				strcat(path, "/");
-				strcat(path, dir->d_name);
-
-				if(!strcmp(articleNumber, dir->d_name)){
-					return path;
-				} else{
-				
-					char *aux = findArticle(path, articleNumber);
-					printf("\n\t\tPATH: %s", path);
-					if(aux != NULL)		return aux;
-
-				}
-			}
-		}
-	}
-	return NULL;
-}*/
 
 void commandHead(char *str){
 
@@ -478,9 +426,7 @@ void commandBody(char *str){
 					strcat(initialMsg, " articulo recuperado");
 					sendMsg(initialMsg);
 
-					FILE *f;
-
-					
+					FILE *f;					
 
 					if((f = fopen(path, "r")) == NULL){
 						perror("Error abriendo archivo");
@@ -530,7 +476,6 @@ void commandNewGroups(char *date, char *time){
 
 void commandNewNews(char *loc, char *date, char *time){
 
-
 	char buff[lenGlobal];
 
 	char *groupInput = malloc(strlen(loc));
@@ -539,8 +484,6 @@ void commandNewNews(char *loc, char *date, char *time){
 	Cola c = splitLine(loc, ".");
 	char fileStart[] = "./articulos/";
 	char *location;
-
-
 
 	int dateInt = atoi(date);
 	int timeInt = atoi(time);
@@ -597,8 +540,7 @@ void commandNewNews(char *loc, char *date, char *time){
 				if((f = fopen(path, "r")) == NULL){
 						perror("Error abriendo archivo");
 				} 
-				else{
-					
+				else{					
 					//fseek(f, 0, SEEK_SET);
 					int rowCount = 0;
 					char *d, *t;
@@ -631,7 +573,6 @@ void commandNewNews(char *loc, char *date, char *time){
 							strcpy(id, buff);
 						}
 						rowCount++;
-
 					}
 					fclose(f);
 					
@@ -659,7 +600,7 @@ void commandPost(){
 	char bufCopy[lenGlobal];
 	char errorCause[200];
 	char fileStart[] = "./articulos/";
-
+	char *groupName;
 	
 	int i,j;
 	int flag = 1;
@@ -695,7 +636,6 @@ void commandPost(){
 
 		strcpy(bufCopy, buf);
 
-
 		/*while (i < lenGlobal) {
 			j = recv(sockfdGlobal, &buf[i], lenGlobal-i, flagGlobal);
 			if (j == -1) {
@@ -717,6 +657,9 @@ void commandPost(){
 					} else{
 						if(!colaVacia(&cM)){
 							aux = colaSuprime(&cM);
+
+							groupName = malloc(strlen(aux) + 4);
+							strcpy(groupName, aux);
 
 							index = 0;
 							while(aux[index] != '\0'){
@@ -762,7 +705,6 @@ void commandPost(){
 								}
 							}
 
-
 						} else{
 							errorFound = 1;
 							strcpy(errorCause, "No se ha detectado Newsgroups: (group) en la primera linea");
@@ -801,7 +743,6 @@ void commandPost(){
 				fputc('\n', f);
 			}
 
-
 			lineCount++;
 		}
 			
@@ -809,6 +750,57 @@ void commandPost(){
 
 
 	if(!errorFound){
+		//Incrementamos el numero de articulos
+		FILE *fAux;
+		
+		if((fAux = fopen("n_articulos", "r")) == NULL){
+			errorFound = 1;
+			strcpy(errorCause, "Error fopen n_articulos");
+			perror("fopen: ");
+		} else{
+			int num;
+			fscanf(fAux, "%d", &num);
+			num++;
+			fclose(fAux);
+
+			fAux = fopen("n_articulos", "w");
+			fprintf(fAux, "%d", num);
+
+			fclose(fAux);
+
+
+			//Actualizamos el fichero grupos.
+/*
+			struct grupo gStruc;
+			fpos_t pointerPos;
+
+			int result;
+
+			if((fAux = fopen("grupos", "r")) == NULL){
+				perror("Error abriendo archivo");
+			} else{
+				do{
+					fgetpos(fAux, &pointerPos);
+					result = fscanf(f, "%s %d %d %d %d %[^\n]", gStruc.loc, &gStruc.last, &gStruc.first, &gStruc.date, &gStruc.time, gStruc.descr);
+
+					if(!strcmp(gStruc.loc, groupName)){
+						
+						break;			
+					}
+					
+				} while(result != EOF);
+				fclose(fAux);
+
+				fAux = fopen("grupos", "w");
+
+				fsetpos(fAux, &pointerPos);
+				fprintf(fAux, "%s %010d %010d %06d %06d %s\n", gStruc.loc, articleNumber, gStruc.first, gStruc.date, gStruc.time, gStruc.descr);
+
+				fclose(fAux);
+			}*/
+		}
+
+
 		sendMsg("240 Articulo recibido correctamente.");
 		//sendMsg(location);
 	} else{
@@ -821,5 +813,4 @@ void commandPost(){
 			remove(location);
 		}
 	}	
-
 }
