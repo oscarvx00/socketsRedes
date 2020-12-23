@@ -21,9 +21,14 @@ size_t lenGlobal;
 int flagGlobal;
 char* hostNameGlobal;
 
+int socketMode = 2;
+
+struct sockaddr *clientaddr_inGlobal;
+int addrlenGlobal;
+
 char *selectedGroupPath = NULL;
 
-int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
+int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mode, struct sockaddr *clientaddr_in, socklen_t val){
 
 	int serverFlag = 1;
 
@@ -32,6 +37,11 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 	lenGlobal = len;
 	flagGlobal = flag;
 	hostNameGlobal = hostName;
+
+	socketMode = mode;
+
+	//clientaddr_inGlobal = clientaddr_in;
+	//addrlenGlobal = addrlen;
 
 	//SE DEBE SPLITEAR PREVIAMENTE
 
@@ -124,14 +134,17 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName){
 void sendMsg(char* msg){
 	//printf ("\033[32;1m %s \033[0m\n", msg);
 
-	char *aux;
-
-	if(!strcmp(hostNameGlobal, "NONAME")){
-		printf("\n%s", msg);
-		return;
+	switch(socketMode){
+		case 0:
+			if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) erroutUtils(hostNameGlobal);
+			break;
+		case 1:
+			break;
+		case 2:
+			printf("\n%s", msg);
+			break;
 	}
-
-	if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) erroutUtils(hostNameGlobal);
+	
 }
 
 void erroutUtils(char *hostname)
@@ -240,6 +253,10 @@ void commandGroup(char* str){
 	} else{
 		sendMsg("501 Error de sintaxis en GROUP newsgroup");
 	}
+
+
+	selectedGroupPath = malloc(strlen(location) + 2);
+	strcpy(selectedGroupPath, location);
 
 	free(groupInput);
 	free(location);

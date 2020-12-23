@@ -2,6 +2,8 @@
 #define SERVERUTILS_H
 
 #include "cola.h"
+#include <sys/types.h>
+#include <sys/socket.h>
 
 struct grupo{
     char loc[512];
@@ -13,7 +15,7 @@ struct grupo{
 };
 
 
-int commandIn(int sockfd, char *bf, size_t len, int flags, char* hostname);
+int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostname, int mode, struct sockaddr *clientaddr_in, socklen_t val);
 void sendMsg(char* msg);
 
 Cola splitLine(char *bf, char *character);

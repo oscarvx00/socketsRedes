@@ -7,6 +7,10 @@
 
 int main(){
 
+
+			struct sockaddr dummy2;
+			int dummy3 = 0;
+
 	char c[512] = "GROUP c.c";
 	char *pos;
 
@@ -16,7 +20,7 @@ int main(){
 		if ((pos=strchr(c, '\n')) != NULL)
 		*pos = '\0';
 		
-		flag = commandIn(0,"NEWNEWS local.redes 20200000 000000",512,0,"NONAME");
+		flag = commandIn(0,c,512,0,"NONAME", 2, dummy2, dummy3);
 	}
 
 
