@@ -478,23 +478,7 @@ void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in)
 	}
      freeaddrinfo(res);
 
-	int flag = 1;
-	int cc;
-
-	while(flag){
-
-		 cc = recvfrom(s, buffer, BUFFERSIZE - 1, 0,
-                   (struct sockaddr *)&clientaddr_in, &addrlen);
-                if ( cc == -1) {
-                    perror("ERROR UDP: ");
-                    exit (1);
-                    }
-                /* Make sure the message received is
-                * null terminated.
-                */
-                buffer[cc]='\0';
-
-	}
+	
 
 	nc = sendto (s, &reqaddr, sizeof(struct in_addr),
 			0, (struct sockaddr *)&clientaddr_in, addrlen);
