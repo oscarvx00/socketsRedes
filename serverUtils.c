@@ -47,7 +47,7 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 
 		/*printf("\033[0;31m");
 		printf("COMMAND IN: %s", bf);
-		printf("\033[0m");*/
+		printf("\033[0m");*/..git 
 	
 	
 	Cola c = splitLine(bf, " ");
