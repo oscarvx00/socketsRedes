@@ -28,7 +28,7 @@ int addrlenGlobal;
 
 char *selectedGroupPath = NULL;
 
-int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mode, struct sockaddr *clientaddr_in, socklen_t val){
+int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mode, struct sockaddr *clientaddr_in, socklen_t addrlen){
 
 	int serverFlag = 1;
 

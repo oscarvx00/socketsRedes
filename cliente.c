@@ -22,11 +22,27 @@
 #include <string.h>
 #include <time.h>
 
+#include <signal.h>
+#include <sys/errno.h>
+
+
 #define PUERTO 8438
 #define TAM_BUFFER 512
 
+
+#define ADDRNOTFOUND	0xffffffff	/* value returned for unknown host */
+#define RETRIES	5		/* number of times to retry before givin up */
+#define TIMEOUT 6
+#define MAXHOST 512
+
 void clientTCP(char *hostN);
 void clientUDP();
+
+void handler()
+{
+ printf("Alarma recibida \n");
+}
+
 
 void functionPost(int s);
 
@@ -56,7 +72,7 @@ char *argv[];
     if(!strcmp("TCP", argv[2]))
         clientTCP(argv[1]);
     else if (!strcmp("UDP", argv[2]))
-        clientUDP();
+        clientUDP(argv[1]);
     else{
         fprintf(stderr, "Usage:  %s <remote host> <TCP/UDP> >ficheroOrdenes.txt>\n", argv[0]);
 		exit(1);
@@ -322,7 +338,108 @@ void clientTCP(char *hostN){
 }
 
 
-void clientUDP(){
+void clientUDP(char *hostN){
 
+
+	char buf[TAM_BUFFER];
+	char *hostName;
+
+	int i;
+	int s;
+	int errcode;
+
+	struct sockaddr_in serverAddr, clientAddr;
+	struct hostent *hp;
+	struct in_addr reqaddr;
+	socklen_t len;
+
+	struct addrinfo hints, *res;
+
+	hostName = malloc(strlen(hostN) + 4);
+	strcpy(hostName, hostN);
+
+
+
+	memset(&clientAddr, 0, sizeof(struct sockaddr_in));
+	memset(&serverAddr, 0, sizeof(struct sockaddr_in));
+	
+
+
+	if((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
+		perror("Error creando socket: ");
+		exit(-1);
+	}
+
+	
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+
+	if(getaddrinfo(hostName, NULL, &hints, &res) != 0){
+		perror("Error getaddrinfo");
+		exit(-1);
+	} else{
+		reqaddr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
+	}
+
+	
+
+
+	bzero((char *) &clientAddr, sizeof(clientAddr));
+	clientAddr.sin_family = AF_INET;
+	clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	clientAddr.sin_port = 8439;
+
+	if(bind(s, (struct sockaddr *) &clientAddr, sizeof(clientAddr)) < 0){
+		perror("Error bind: ");
+		close(s);
+		exit(-1);
+	}
+
+
+
+
+
+
+	bzero((char *) &serverAddr, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
+	serverAddr.sin_port = htons(PUERTO);
+
+	freeaddrinfo(res);
+
+
+	
+	int flag = 1;
+	
+	while(flag){
+
+		printf("\n\nIntroduce comando: ");
+		char *pos;
+		fgets(buf, 512, stdin);
+		if ((pos=strchr(buf, '\n')) != NULL)
+		*pos = '\0';
+		
+
+		if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&serverAddr,
+				sizeof(serverAddr)) == -1) {
+        		perror("Error sendto: ");
+        		fprintf(stderr, "unable to send request\n");
+        		exit(1);
+        	}
+
+		do{
+
+			i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &clientAddr, &len);
+			buf[i] = '\0';
+
+
+			printf("%s", buf);
+
+		} while(strcmp(buf, "\r\n"));
+
+
+	}
+
+	close(s);
 
 }

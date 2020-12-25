@@ -43,7 +43,7 @@ extern int errno;
  */
  
 void serverTCP(int s, struct sockaddr_in peeraddr_in);
-void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in);
+void serverUDP(int s);
 void errout(char *);		/* declare error out routine */
 
 int FIN = 0;             /* Para el cierre ordenado */
@@ -252,18 +252,21 @@ char *argv[];
                 * room is left at the end of the buffer
                 * for a null character.
                 */
-                cc = recvfrom(s_UDP, buffer, BUFFERSIZE - 1, 0,
+
+
+			   	printf("WE ARE HERE\n");
+				fflush(stdout);
+
+                /*cc = recvfrom(s_UDP, buffer, BUFFERSIZE - 1, 0,
                    (struct sockaddr *)&clientaddr_in, &addrlen);
                 if ( cc == -1) {
                     perror(argv[0]);
                     printf("%s: recvfrom error\n", argv[0]);
                     exit (1);
                     }
-                /* Make sure the message received is
-                * null terminated.
-                */
-                buffer[cc]='\0';
-                serverUDP (s_UDP, buffer, clientaddr_in);
+
+                buffer[cc]='\0';*/
+                serverUDP (s_UDP);
                 }
           }
 		}   /* Fin del bucle infinito de atenci�n a clientes */
@@ -450,41 +453,46 @@ void errout(char *hostname)
  *	logging information to stdout.
  *
  */
-void serverUDP(int s, char * buffer, struct sockaddr_in clientaddr_in)
+void serverUDP(int s)
 {
-    struct in_addr reqaddr;	/* for requested host's address */
-    struct hostent *hp;		/* pointer to host info for requested host */
-    int nc, errcode;
 
-    struct addrinfo hints, *res;
+	struct sockaddr_in clientaddr_in;	/* for peer socket address */
+
+	char buf[512];
+
+	int cc, nc;
 
 	int addrlen;
     
    	addrlen = sizeof(struct sockaddr_in);
 
-      memset (&hints, 0, sizeof (hints));
-      hints.ai_family = AF_INET;
-		/* Treat the message as a string containing a hostname. */
-	    /* Esta funci�n es la recomendada para la compatibilidad con IPv6 gethostbyname queda obsoleta. */
-    errcode = getaddrinfo (buffer, NULL, &hints, &res); 
-    if (errcode != 0){
-		/* Name was not found.  Return a
-		 * special value signifying the error. */
-		reqaddr.s_addr = ADDRNOTFOUND;
-      }
-    else {
-		/* Copy address of host into the return buffer. */
-		reqaddr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
-	}
-     freeaddrinfo(res);
 
+
+		cc = recvfrom(s, buf, BUFFERSIZE - 1, 0,
+			(struct sockaddr *)&clientaddr_in, &addrlen);
+		if ( cc == -1) {
+			perror("Error recvfrom: ");
+			printf("recvfrom error\n");
+			exit (1);
+			}
+		/* Make sure the message received is
+		* null terminated.
+		*/
+		buf[cc]='\0';
+
+		commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, (struct sockaddr *)&clientaddr_in, addrlen);
+
+		
+
+		/*nc = sendto (s, buf, TAM_BUFFER,
+				0, (struct sockaddr *)&clientaddr_in, addrlen);
+		if ( nc == -1) {
+			perror("serverUDP");
+			printf("%s: sendto error\n", "serverUDP");
+			exit(-1);
+		}  */
 	
 
-	nc = sendto (s, &reqaddr, sizeof(struct in_addr),
-			0, (struct sockaddr *)&clientaddr_in, addrlen);
-	if ( nc == -1) {
-		perror("serverUDP");
-		printf("%s: sendto error\n", "serverUDP");
-		return;
-	}   
+
+ 
  }
