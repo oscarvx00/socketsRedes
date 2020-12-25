@@ -480,17 +480,17 @@ void serverUDP(int s)
 		*/
 		buf[cc]='\0';
 
-		commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, (struct sockaddr *)&clientaddr_in, addrlen);
+		//commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, (struct sockaddr *)&clientaddr_in, addrlen);
 
 		
 
-		/*nc = sendto (s, buf, TAM_BUFFER,
+		nc = sendto (s, buf, TAM_BUFFER,
 				0, (struct sockaddr *)&clientaddr_in, addrlen);
 		if ( nc == -1) {
 			perror("serverUDP");
 			printf("%s: sendto error\n", "serverUDP");
 			exit(-1);
-		}  */
+		}  
 	
 
 

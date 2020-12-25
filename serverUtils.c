@@ -47,7 +47,7 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 
 		/*printf("\033[0;31m");
 		printf("COMMAND IN: %s", bf);
-		printf("\033[0m");*/..git 
+		printf("\033[0m");*/
 	
 	
 	Cola c = splitLine(bf, " ");
@@ -134,11 +134,21 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 void sendMsg(char* msg){
 	//printf ("\033[32;1m %s \033[0m\n", msg);
 
+	int nc;
+
 	switch(socketMode){
 		case 0:
 			if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) erroutUtils(hostNameGlobal);
 			break;
 		case 1:
+			nc = sendto (sockfdGlobal, msg, lenGlobal,
+					0, clientaddr_inGlobal, addrlenGlobal);
+			if ( nc == -1) {
+				perror("serverUDP: ");
+				fflush(stdout);
+				//printf("%s: sendto error\n", "serverUDP");
+				exit(-1);
+		}  
 			break;
 		case 2:
 			printf("\n%s", msg);
@@ -162,12 +172,12 @@ Cola splitLine(char *bf, char *character){
 
 	//printf("BUFFER: %s\nCOPY: %s\nCOMP: %d", bf, bfCopy, strcmp(bf, bfCopy));
 
-	if(colaCreaVacia(&c) != 0){
+	/*if(colaCreaVacia(&c) != 0){
 		printf("\033[0;31m");
 		printf("ERROR CREANDO COLA COMMAND");
 		printf("\033[0m");
 		exit(-1);
-	}
+	}*/
 	colaCreaVacia(&c);
 
 	char* token = strtok(bfCopy, character);
