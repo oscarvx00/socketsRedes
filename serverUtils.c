@@ -142,10 +142,6 @@ void sendMsg(char* msg){
 			break;
 		case 1:
 
-
-			//printf("\nSEND MSG: %d", clientaddr_inGlobal->sa_family);
-			//fflush(stdout);
-
 			nc = sendto (sockfdGlobal, msg, lenGlobal,
 					0, (struct sockaddr *) &clientaddr_inGlobal, addrlenGlobal);
 			if ( nc == -1) {
@@ -650,20 +646,35 @@ void commandPost(){
 
 	int articleNumber = 1;
 
+
 	sendMsg("240 Subiendo un articulo, finalice con una linea que solo contenga un punto");
 
-
 	do{	
-		
-		i = recv(sockfdGlobal, buf, lenGlobal, flagGlobal);
-		if (i == -1) {
-			perror("ERROR RECV");
-			exit(1);
-		} else if(i == 0){//EOF
-			flag = 0;
-			//printf("CLIENTE SALE");
-			break;
+
+		switch(socketMode){
+			case 0:
+				i = recv(sockfdGlobal, buf, lenGlobal, flagGlobal);
+				if (i == -1) {
+					perror("ERROR RECV");
+					exit(1);
+				} else if(i == 0){//EOF
+					flag = 0;
+					//printf("CLIENTE SALE");
+					break;
+				}
+				break;
+			case 1:
+				i = recvfrom(sockfdGlobal, buf, lenGlobal, 0,
+					(struct sockaddr *)&clientaddr_inGlobal, &addrlenGlobal);
+				if ( i == -1) {
+					perror("Error recvfrom: ");
+					printf("recvfrom error\n");
+					exit (1);
+					}
+				break;
 		}
+		
+		
 
 		buf[i] = '\0';
 

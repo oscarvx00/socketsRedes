@@ -44,7 +44,8 @@ void handler()
 }
 
 
-void functionPost(int s);
+void functionPostTCP(int s);
+void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in clientAddr);
 
 /*
  *			M A I N
@@ -84,7 +85,7 @@ char *argv[];
 
 }
 
-void functionPost(int s){
+void functionPostTCP(int s){
 
 	char buf[TAM_BUFFER];
 	char *pos;
@@ -261,7 +262,7 @@ void clientTCP(char *hostN){
 
 			if(!strcmp(buf, "POST")){
 				//POSTING
-				functionPost(s);
+				functionPostTCP(s);
 			} else if(!strcmp("QUIT", buf)){
 				flag = 0;
 			}
@@ -425,10 +426,7 @@ void clientUDP(char *hostN){
 		if ((pos=strchr(buf, '\n')) != NULL)
 		*pos = '\0';
 
-		if(!strcmp("QUIT", buf)){
-			flag = 0;
-		}
-		
+
 
 		if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&serverAddr,
 				sizeof(serverAddr)) == -1) {
@@ -436,6 +434,13 @@ void clientUDP(char *hostN){
         		fprintf(stderr, "unable to send request\n");
         		exit(1);
         	}
+
+		if(!strcmp(buf, "POST")){
+				//POSTING
+				functionPostUDP(s, serverAddr, clientAddr);
+		} else if(!strcmp("QUIT", buf)){
+			flag = 0;
+		}
 
 		do{
 
@@ -452,5 +457,48 @@ void clientUDP(char *hostN){
 	}
 
 	close(s);
+
+}
+
+
+void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in clientAddr){
+
+	char buf[TAM_BUFFER];
+	char *pos;
+
+	struct sockaddr_in sAddr, cAddr;
+	sAddr = serverAddr;
+	cAddr = clientAddr;
+
+	int len;
+	int i, j;
+	//Recibimos mensaje de confirmacion
+
+	i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &cAddr, &len);
+			if (i == -1) {
+				//perror(argv[0]);
+				//fprintf(stderr, "%s: error reading result\n", argv[0]);
+				exit(1);
+			} else if(i == 0){//EOF
+				//flag = 0;
+				//printf("CLIENTE SALE");
+				//break;
+			}
+
+			printf("\nC: %s\n", buf);
+
+
+	do{
+	fgets(buf, 512, stdin);
+	if ((pos=strchr(buf, '\n')) != NULL)
+    *pos = '\0';
+
+			if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&sAddr,
+				sizeof(sAddr)) == -1) {
+        		perror("Error sendto: ");
+        		fprintf(stderr, "unable to send request\n");
+        		exit(1);
+        	}
+	} while(strcmp(buf, "."));
 
 }

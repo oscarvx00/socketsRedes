@@ -262,7 +262,17 @@ char *argv[];
                     }
 
                 buffer[cc]='\0';*/
-                serverUDP (s_UDP);
+                switch(fork()){
+					case -1:
+						break;
+					case 0:
+						serverUDP (s_UDP);
+						exit(0);
+						break;
+					default:
+						close(s_UDP);
+						break;		
+				}
                 }
           }
 		}   /* Fin del bucle infinito de atenci�n a clientes */
@@ -445,11 +455,15 @@ void serverUDP(int s)
 
 	char buf[512];
 
-	int cc, nc;
+	int cc;
 
 	int addrlen;
+
+	int flag = 1;
     
    	addrlen = sizeof(clientaddr_in);
+
+	while(flag){
 
 		cc = recvfrom(s, buf, TAM_BUFFER, 0,
 			(struct sockaddr *)&clientaddr_in, &addrlen);
@@ -461,6 +475,9 @@ void serverUDP(int s)
 
 		buf[cc]='\0';
 
-		commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, clientaddr_in, addrlen);
+		flag = commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, clientaddr_in, addrlen);
+	}
+
+	close(s);	
 
  }
