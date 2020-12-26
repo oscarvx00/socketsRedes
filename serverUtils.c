@@ -23,12 +23,12 @@ char* hostNameGlobal;
 
 int socketMode = 2;
 
-struct sockaddr *clientaddr_inGlobal;
+struct sockaddr_in clientaddr_inGlobal;
 int addrlenGlobal;
 
 char *selectedGroupPath = NULL;
 
-int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mode, struct sockaddr *clientaddr_in, socklen_t addrlen){
+int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mode, struct sockaddr_in clientaddr_in, socklen_t addrlen){
 
 	int serverFlag = 1;
 
@@ -40,8 +40,8 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 
 	socketMode = mode;
 
-	//clientaddr_inGlobal = clientaddr_in;
-	//addrlenGlobal = addrlen;
+	clientaddr_inGlobal = clientaddr_in;
+	addrlenGlobal = addrlen;
 
 	//SE DEBE SPLITEAR PREVIAMENTE
 
@@ -141,14 +141,19 @@ void sendMsg(char* msg){
 			if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) erroutUtils(hostNameGlobal);
 			break;
 		case 1:
+
+
+			//printf("\nSEND MSG: %d", clientaddr_inGlobal->sa_family);
+			//fflush(stdout);
+
 			nc = sendto (sockfdGlobal, msg, lenGlobal,
-					0, clientaddr_inGlobal, addrlenGlobal);
+					0, (struct sockaddr *) &clientaddr_inGlobal, addrlenGlobal);
 			if ( nc == -1) {
 				perror("serverUDP: ");
 				fflush(stdout);
 				//printf("%s: sendto error\n", "serverUDP");
 				exit(-1);
-		}  
+			}  
 			break;
 		case 2:
 			printf("\n%s", msg);
@@ -649,6 +654,7 @@ void commandPost(){
 
 
 	do{	
+		
 		i = recv(sockfdGlobal, buf, lenGlobal, flagGlobal);
 		if (i == -1) {
 			perror("ERROR RECV");

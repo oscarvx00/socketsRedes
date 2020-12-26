@@ -22,7 +22,6 @@
 
 #define PUERTO 8438
 #define ADDRNOTFOUND	0xffffffff	/* return address for unfound host */
-#define BUFFERSIZE	1024	/* maximum size of packets to be received */
 #define TAM_BUFFER 512
 #define MAXHOST 128
 
@@ -68,7 +67,7 @@ char *argv[];
     fd_set readmask;
     int numfds,s_mayor;
     
-    char buffer[BUFFERSIZE];	/* buffer for packets to be read into */
+    //char buffer[BUFFERSIZE];	/* buffer for packets to be read into */
     
     struct sigaction vec;
 
@@ -254,9 +253,6 @@ char *argv[];
                 */
 
 
-			   	printf("WE ARE HERE\n");
-				fflush(stdout);
-
                 /*cc = recvfrom(s_UDP, buffer, BUFFERSIZE - 1, 0,
                    (struct sockaddr *)&clientaddr_in, &addrlen);
                 if ( cc == -1) {
@@ -295,7 +291,7 @@ char *argv[];
 void serverTCP(int s, struct sockaddr_in clientaddr_in)
 {
 
-	struct sockaddr dummy2;
+	struct sockaddr_in dummy2;
 	socklen_t dummy3 = 0;
 
 	int reqcnt = 0;		/* keeps count of number of requests */
@@ -389,17 +385,7 @@ while(flag){
 			/* Increment the request count. */
 		reqcnt++;
 			
-			/*
-			*
-			*CODIGO FUNCION
-			*
-			**/
-			
-			//printf("BUFFER SERVER: %s", buf);
-
-			
-			
-			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, &dummy2, 0);			
+			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, dummy2, 0);			
 			
 	//}		
 }
@@ -442,7 +428,6 @@ void errout(char *hostname)
 	exit(1);     
 }
 
-
 /*
  *				S E R V E R U D P
  *
@@ -464,35 +449,18 @@ void serverUDP(int s)
 
 	int addrlen;
     
-   	addrlen = sizeof(struct sockaddr_in);
+   	addrlen = sizeof(clientaddr_in);
 
-
-
-		cc = recvfrom(s, buf, BUFFERSIZE - 1, 0,
+		cc = recvfrom(s, buf, TAM_BUFFER, 0,
 			(struct sockaddr *)&clientaddr_in, &addrlen);
 		if ( cc == -1) {
 			perror("Error recvfrom: ");
 			printf("recvfrom error\n");
 			exit (1);
 			}
-		/* Make sure the message received is
-		* null terminated.
-		*/
+
 		buf[cc]='\0';
 
-		//commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, (struct sockaddr *)&clientaddr_in, addrlen);
+		commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, clientaddr_in, addrlen);
 
-		
-
-		nc = sendto (s, buf, TAM_BUFFER,
-				0, (struct sockaddr *)&clientaddr_in, addrlen);
-		if ( nc == -1) {
-			perror("serverUDP");
-			printf("%s: sendto error\n", "serverUDP");
-			exit(-1);
-		}  
-	
-
-
- 
  }

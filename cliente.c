@@ -262,7 +262,13 @@ void clientTCP(char *hostN){
 			if(!strcmp(buf, "POST")){
 				//POSTING
 				functionPost(s);
+			} else if(!strcmp("QUIT", buf)){
+				flag = 0;
 			}
+
+
+
+
 		//}
 
 			/* Now, shutdown the connection for further sends.
@@ -418,6 +424,10 @@ void clientUDP(char *hostN){
 		fgets(buf, 512, stdin);
 		if ((pos=strchr(buf, '\n')) != NULL)
 		*pos = '\0';
+
+		if(!strcmp("QUIT", buf)){
+			flag = 0;
+		}
 		
 
 		if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&serverAddr,
@@ -433,7 +443,8 @@ void clientUDP(char *hostN){
 			buf[i] = '\0';
 
 
-			printf("%s", buf);
+			printf("\n%s", buf);
+			fflush(stdout);
 
 		} while(strcmp(buf, "\r\n"));
 
