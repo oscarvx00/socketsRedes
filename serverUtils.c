@@ -853,7 +853,6 @@ void commandPost(){
 			}*/
 		}
 
-
 		sendMsg("240 Articulo recibido correctamente.");
 		//sendMsg(location);
 	} else{
@@ -871,7 +870,7 @@ void commandPost(){
 
 
 
-void writeLog(char *msg, int sem, char *prot){
+void writeLog(char *msg, int sem, char *prot, in_port_t port){
 
 	char localProt[5];
 
@@ -889,7 +888,6 @@ void writeLog(char *msg, int sem, char *prot){
 
 	long timeVar;
 
-
 	if(prot == NULL){
 		switch(socketMode){
 			case 0:
@@ -903,6 +901,10 @@ void writeLog(char *msg, int sem, char *prot){
 		strcpy(localProt, prot);
 	}
 
+	if(port == -1){
+		port = clientaddr_inGlobal.sin_port;
+	}
+
 
 	time(&timeVar);
 
@@ -914,7 +916,7 @@ void writeLog(char *msg, int sem, char *prot){
 	if((log = fopen("serverLog", "a")) == NULL){
 		perror("fopen log");
 	} else{
-		fprintf(log, "\n%s %s: %s",(char *) ctime(&timeVar), localProt, msg);
+		fprintf(log, "\n%s\t%s port %u: %s",(char *) ctime(&timeVar), localProt, ntohs(port), msg);
 		fclose(log);
 	}
 
@@ -922,5 +924,4 @@ void writeLog(char *msg, int sem, char *prot){
 	{perror ("ERROR signal");
 			exit(EXIT_FAILURE);
 	}
-
 }

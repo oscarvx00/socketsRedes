@@ -1,6 +1,5 @@
 
-test: test.c serverUtils.o serverUtils.h cola.h cola.o
-	gcc -g test.c serverUtils.o cola.o -o test
+all: servidor cliente
 
 servidor: servidor.c serverUtils.o serverUtils.h
 	gcc -g servidor.c serverUtils.o cola.o -o server
@@ -10,3 +9,7 @@ serverUtils.o: serverUtils.h serverUtils.c cola.o
 	
 cola.o: cola.h cola.c
 	gcc -g -c cola.c
+
+
+cliente: cliente.c
+	gcc -g -o cliente cliente.c

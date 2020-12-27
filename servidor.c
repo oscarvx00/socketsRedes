@@ -255,7 +255,6 @@ char *argv[];
         				exit(1);
         			case 0:		/* Child process comes here. */
                     			close(ls_TCP); /* Close the listen socket inherited from the daemon. */
-								printf("SERVER: New Socket");
         				serverTCP(s_TCP, clientaddr_in);
         				exit(0);
         			default:	/* Daemon process comes here. */
@@ -366,10 +365,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	sprintf(buf, "Startup from %s port %u",
-		hostname, ntohs(clientaddr_in.sin_port));
+	sprintf(buf, "Startup from %s",
+		hostname);
 
-		writeLog(buf,logSem, "TCP");
+		writeLog(buf,logSem, "TCP", clientaddr_in.sin_port);
 
 		/* Set the socket for a lingering, graceful close.
 		 * This will cause a final close of this socket to wait until all of the
@@ -421,7 +420,7 @@ while(flag){
 		buf[len] = '\0';
 			/* Increment the request count. */
 		reqcnt++;
-			
+			writeLog(buf, logSem, "TCP", clientaddr_in.sin_port);
 			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, clientaddr_in, 0);			
 			
 	//}		
@@ -441,9 +440,9 @@ while(flag){
 		 * that does require it.
 		 */
 	
-	sprintf(buf, "Completed %s port %u, %d requests\n",
-		hostname, ntohs(clientaddr_in.sin_port), reqcnt);
-	writeLog(buf, logSem, "TCP");
+	sprintf(buf, "Completed %s, %d requests\n",
+		hostname, reqcnt);
+	writeLog(buf, logSem, "TCP", clientaddr_in.sin_port);
 	
 }
 
@@ -484,10 +483,10 @@ void serverUDP(int s)
 
 	int flag = 1;
 
-	sprintf(buf, "Startup from %s port %u",
-		hostname, ntohs(clientaddr_in.sin_port));
+	sprintf(buf, "Startup from %s",
+		hostname);
 
-		writeLog(buf,logSem, "UDP");
+		writeLog(buf,logSem, "UDP", clientaddr_in.sin_port);
 
 
 	while(flag){
@@ -502,6 +501,7 @@ void serverUDP(int s)
 
 		buf[cc]='\0';
 
+		writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
 		flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 
 		reqcnt++;
@@ -509,8 +509,8 @@ void serverUDP(int s)
 
 	close(s);
 
-	sprintf(buf, "Completed %s port %u, %d requests\n",
-		hostname, ntohs(clientaddr_in.sin_port), reqcnt);
-	writeLog(buf, logSem, "UDP");
+	sprintf(buf, "Completed %s, %d requests\n",
+		hostname, reqcnt);
+	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
 
  }

@@ -32,7 +32,7 @@ void commandPost();
 
 void erroutUtils(char *);		/* declare error out routine */
 
-void writeLog(char *msg, int sem, char *prot);
+void writeLog(char *msg, int sem, char *prot, in_port_t port);
 
 
 #endif
