@@ -98,9 +98,9 @@ char *argv[];
         perror("Error al crear segmento de semaforos");
         exit(EXIT_FAILURE);
     }
-	semctl(logSem, 1, SETVAL, initLogSem);  
-	
-	        
+	semctl(logSem, 0, SETVAL, initLogSem);  
+
+
 
 		/* Create the listen socket. */
 	ls_TCP = socket (AF_INET, SOCK_STREAM, 0);
@@ -331,16 +331,12 @@ char *argv[];
 void serverTCP(int s, struct sockaddr_in clientaddr_in)
 {
 
-	struct sockaddr_in dummy2;
-	socklen_t dummy3 = 0;
-
 	int reqcnt = 0;		/* keeps count of number of requests */
 	char buf[TAM_BUFFER];		/* This example uses TAM_BUFFER byte messages. */
 	char hostname[MAXHOST];		/* remote host's name string */
 
 	int len, len1, status;
     struct hostent *hp;		/* pointer to host info for remote host */
-    long timevar;			/* contains time returned by time() */
     
     struct linger linger;		/* allow a lingering, graceful close; */
     				            /* used when setting SO_LINGER */
@@ -364,15 +360,16 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
             	perror(" inet_ntop \n");
              }
     /* Log a startup message. */
-    time (&timevar);
 		/* The port number must be converted first to host byte
 		 * order before printing.  On most hosts, this is not
 		 * necessary, but the ntohs() call is included here so
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("Startup from %s port %u at %s",
-		hostname, ntohs(clientaddr_in.sin_port), (char *) ctime(&timevar));
+	sprintf(buf, "Startup from %s port %u",
+		hostname, ntohs(clientaddr_in.sin_port));
+
+		writeLog(buf,logSem, "TCP");
 
 		/* Set the socket for a lingering, graceful close.
 		 * This will cause a final close of this socket to wait until all of the
@@ -425,22 +422,11 @@ while(flag){
 			/* Increment the request count. */
 		reqcnt++;
 			
-			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, dummy2, 0);			
+			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, clientaddr_in, 0);			
 			
 	//}		
 }
 
-		/* The loop has terminated, because there are no
-		 * more requests to be serviced.  As mentioned above,
-		 * this close will block until all of the sent replies
-		 * have been received by the remote host.  The reason
-		 * for lingering on the close is so that the server will
-		 * have a better idea of when the remote has picked up
-		 * all of the data.  This will allow the start and finish
-		 * times printed in the log file to reflect more accurately
-		 * the length of time this connection was used.
-		 */
-	//close(s);
 
 	if (shutdown(s, 1) == -1) {
 			//perror(argv[0]);
@@ -448,15 +434,17 @@ while(flag){
 			exit(1);
 	}
 		/* Log a finishing message. */
-	time (&timevar);
 		/* The port number must be converted first to host byte
 		 * order before printing.  On most hosts, this is not
 		 * necessary, but the ntohs() call is included here so
 		 * that this program could easily be ported to a host
 		 * that does require it.
 		 */
-	printf("Completed %s port %u, %d requests, at %s\n",
-		hostname, ntohs(clientaddr_in.sin_port), reqcnt, (char *) ctime(&timevar));
+	
+	sprintf(buf, "Completed %s port %u, %d requests\n",
+		hostname, ntohs(clientaddr_in.sin_port), reqcnt);
+	writeLog(buf, logSem, "TCP");
+	
 }
 
 /*
@@ -484,14 +472,22 @@ void serverUDP(int s)
 	struct sockaddr_in clientaddr_in;	/* for peer socket address */
 
 	char buf[512];
+	char hostname[MAXHOST];		
 
 	int cc;
 	int reqcnt = 0;
-	long timeVar;
 
 	socklen_t addrlen = sizeof(clientaddr_in);
 
+	getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in),
+                           hostname,MAXHOST,NULL,0,0);
+
 	int flag = 1;
+
+	sprintf(buf, "Startup from %s port %u",
+		hostname, ntohs(clientaddr_in.sin_port));
+
+		writeLog(buf,logSem, "UDP");
 
 
 	while(flag){
@@ -506,16 +502,15 @@ void serverUDP(int s)
 
 		buf[cc]='\0';
 
-		flag = commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, clientaddr_in, addrlen);
+		flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 
 		reqcnt++;
 	}
 
 	close(s);
 
-	time(&timeVar);	
-
-	printf("Completed %s port %u, %d requests, at %s\n",
-		"UDP", ntohs(clientaddr_in.sin_port), reqcnt, (char *) ctime(&timeVar));
+	sprintf(buf, "Completed %s port %u, %d requests\n",
+		hostname, ntohs(clientaddr_in.sin_port), reqcnt);
+	writeLog(buf, logSem, "UDP");
 
  }

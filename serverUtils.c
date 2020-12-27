@@ -15,6 +15,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/sem.h> 
+#include <sys/wait.h> 
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h>
+#include <sys/msg.h>
+#include <limits.h>
+
 int sockfdGlobal;
 char* bfGlobal;
 size_t lenGlobal;
@@ -858,4 +866,61 @@ void commandPost(){
 			remove(location);
 		}
 	}	
+}
+
+
+
+
+void writeLog(char *msg, int sem, char *prot){
+
+	char localProt[5];
+
+	struct sembuf waitSem;
+    waitSem.sem_num = 0;
+    waitSem.sem_op = -1;
+    waitSem.sem_flg = 0;
+    
+	struct sembuf signalSem;
+    signalSem.sem_num = 0;
+    signalSem.sem_op = 1;
+    signalSem.sem_flg = 0;
+
+	FILE *log;
+
+	long timeVar;
+
+
+	if(prot == NULL){
+		switch(socketMode){
+			case 0:
+				strcpy(localProt, "TCP");
+				break;
+			case 1:
+				strcpy(localProt, "UDP");
+				break;	
+		}
+	} else{
+		strcpy(localProt, prot);
+	}
+
+
+	time(&timeVar);
+
+	if(semop(sem, &waitSem, 1) == -1)
+	{perror ("ERROR wait");
+			exit(EXIT_FAILURE);
+	} 
+
+	if((log = fopen("serverLog", "a")) == NULL){
+		perror("fopen log");
+	} else{
+		fprintf(log, "\n%s %s: %s",(char *) ctime(&timeVar), localProt, msg);
+		fclose(log);
+	}
+
+	if(semop(sem, &signalSem, 1) == -1)
+	{perror ("ERROR signal");
+			exit(EXIT_FAILURE);
+	}
+
 }
