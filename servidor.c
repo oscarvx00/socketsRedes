@@ -18,6 +18,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/sem.h> 
+#include <sys/wait.h> 
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h>
+#include <sys/msg.h>
+#include <limits.h>
+
 #include "serverUtils.h"
 
 #define PUERTO 8438
@@ -30,6 +38,16 @@
 #define TEST_MODE 2
 
 extern int errno;
+typedef unsigned short ushort_t;
+
+union semun 
+  {int             val;
+   struct semid_ds *buf;
+   ushort_t        *array;
+  };
+
+int logSem;
+
 
 /*
  *			M A I N
@@ -70,6 +88,19 @@ char *argv[];
     //char buffer[BUFFERSIZE];	/* buffer for packets to be read into */
     
     struct sigaction vec;
+
+
+
+	//Creamos el semaforo del log
+	union semun initLogSem;
+	initLogSem.val = 1;
+	if((logSem = semget(IPC_PRIVATE, 1, IPC_CREAT | 0600)) == -1){
+        perror("Error al crear segmento de semaforos");
+        exit(EXIT_FAILURE);
+    }
+	semctl(logSem, 1, SETVAL, initLogSem);  
+	
+	        
 
 		/* Create the listen socket. */
 	ls_TCP = socket (AF_INET, SOCK_STREAM, 0);
@@ -268,7 +299,6 @@ char *argv[];
 					case 0:
 						serverUDP (s_UDP);
 						exit(0);
-						break;
 					default:
 						close(s_UDP);
 						break;		
@@ -456,12 +486,13 @@ void serverUDP(int s)
 	char buf[512];
 
 	int cc;
+	int reqcnt = 0;
+	long timeVar;
 
-	int addrlen;
+	socklen_t addrlen = sizeof(clientaddr_in);
 
 	int flag = 1;
-    
-   	addrlen = sizeof(clientaddr_in);
+
 
 	while(flag){
 
@@ -476,8 +507,15 @@ void serverUDP(int s)
 		buf[cc]='\0';
 
 		flag = commandIn(s, buf, TAM_BUFFER, 0, "UDP HOST", UDP_MODE, clientaddr_in, addrlen);
+
+		reqcnt++;
 	}
 
-	close(s);	
+	close(s);
+
+	time(&timeVar);	
+
+	printf("Completed %s port %u, %d requests, at %s\n",
+		"UDP", ntohs(clientaddr_in.sin_port), reqcnt, (char *) ctime(&timeVar));
 
  }

@@ -32,5 +32,7 @@ void commandPost();
 
 void erroutUtils(char *);		/* declare error out routine */
 
+void writeLog(char *msg, int sem);
+
 
 #endif

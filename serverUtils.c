@@ -649,6 +649,7 @@ void commandPost(){
 
 	sendMsg("240 Subiendo un articulo, finalice con una linea que solo contenga un punto");
 
+
 	do{	
 
 		switch(socketMode){
@@ -771,7 +772,7 @@ void commandPost(){
 					//Colocamos Date despues de subject.
 					time_t t = time(NULL);
 					struct tm tms = *localtime(&t);
-					snprintf(buf, lenGlobal, "Date: %d%02d%02d %02d%02d%02d", tms.tm_year + 1900, tms.tm_mon +1, tms.tm_mday, tms.tm_hour, tms.tm_min, tms.tm_sec);
+					snprintf(buf, lenGlobal, "Date: %d%02d%02d %02d%02d%02d", tms.tm_year - 100, tms.tm_mon +1, tms.tm_mday, tms.tm_hour, tms.tm_min, tms.tm_sec);
 					fputs(buf, f);
 					fputc('\n', f);
 

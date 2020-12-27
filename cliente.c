@@ -392,9 +392,16 @@ void clientUDP(char *hostN){
 
 
 	bzero((char *) &clientAddr, sizeof(clientAddr));
-	clientAddr.sin_family = AF_INET;
+	/*clientAddr.sin_family = AF_INET;
 	clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	clientAddr.sin_port = 8439;
+	clientAddr.sin_port = 8437;*/
+
+	len = sizeof(clientAddr);
+	if (getsockname(s, (struct sockaddr *)&clientAddr, &len) == -1) {
+		perror("Error getsockname TCP: ");
+		fprintf(stderr, "unable to read socket address\n");
+		exit(1);
+	 }
 
 	if(bind(s, (struct sockaddr *) &clientAddr, sizeof(clientAddr)) < 0){
 		perror("Error bind: ");
@@ -470,22 +477,23 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 	sAddr = serverAddr;
 	cAddr = clientAddr;
 
-	int len;
+	socklen_t len = sizeof(cAddr);
 	int i, j;
+
 	//Recibimos mensaje de confirmacion
 
 	i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &cAddr, &len);
 			if (i == -1) {
-				//perror(argv[0]);
+				perror("Error recvfrom function post");
 				//fprintf(stderr, "%s: error reading result\n", argv[0]);
 				exit(1);
 			} else if(i == 0){//EOF
-				//flag = 0;
 				//printf("CLIENTE SALE");
 				//break;
 			}
 
 			printf("\nC: %s\n", buf);
+
 
 
 	do{
