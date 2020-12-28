@@ -418,6 +418,9 @@ while(flag){
 			len += len1;
 		}*/
 		buf[len] = '\0';
+		char *pos;
+		if ((pos=strchr(buf, '\r')) != NULL)
+		*pos = '\0';
 			/* Increment the request count. */
 		reqcnt++;
 			writeLog(buf, logSem, "TCP", clientaddr_in.sin_port);
@@ -500,6 +503,9 @@ void serverUDP(int s)
 			}
 
 		buf[cc]='\0';
+		char *pos;
+		if ((pos=strchr(buf, '\r')) != NULL)
+		*pos = '\0';
 
 		writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
 		flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);

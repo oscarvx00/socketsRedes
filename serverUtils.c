@@ -56,6 +56,8 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 		/*printf("\033[0;31m");
 		printf("COMMAND IN: %s", bf);
 		printf("\033[0m");*/
+
+
 	
 	
 	Cola c = splitLine(bf, " ");
@@ -270,7 +272,7 @@ void commandGroup(char* str){
 
 		sendMsg(msg);
 	} else{
-		sendMsg("501 Error de sintaxis en GROUP newsgroup");
+		sendMsg("501 Error de sintaxis en GROUP newsgroup / 411 Grupo no encontrado");
 	}
 
 
@@ -291,12 +293,14 @@ void commandArticle(char *str){
 	char buff[lenGlobal];
 
 	if(selectedGroupPath == NULL){
-		sendMsg("500 No se ha seleccionado ningun grupo (GROUP)");
+		sendMsg("412 No se ha seleccionado ningun grupo (GROUP)");
 		return;
 	} 
 
 	DIR *d;
 	struct dirent *dir;
+
+	int articleFound = 0;
 
 	d = opendir(selectedGroupPath);
 
@@ -332,6 +336,7 @@ void commandArticle(char *str){
 					if((f = fopen(path, "r")) == NULL){
 						perror("Error abriendo archivo");
 					} else{
+						articleFound = 1;
 						fseek(f, 0, SEEK_SET);
 						while(fgets(buff, lenGlobal, f)){
 							
@@ -343,10 +348,15 @@ void commandArticle(char *str){
 						}
 						fclose(f);
 					}
-				}
+				} 
 			}
 		}
 	}
+
+	if(!articleFound){
+		sendMsg("423 Articulo no encontrado");
+	}
+
 }
 
 
@@ -359,12 +369,14 @@ void commandHead(char *str){
 	char buff[lenGlobal];
 
 	if(selectedGroupPath == NULL){
-		sendMsg("500 No se ha seleccionado ningun grupo (GROUP)");
+		sendMsg("412 No se ha seleccionado ningun grupo (GROUP)");
 		return;
 	} 
 
 	DIR *d;
 	struct dirent *dir;
+
+	int articleFound = 0;
 
 	d = opendir(selectedGroupPath);
 
@@ -388,9 +400,9 @@ void commandHead(char *str){
 
 					//Lectura y envio del articulo
 					char *initialMsg = malloc(300);
-					strcpy(initialMsg, "223 ");
+					strcpy(initialMsg, "221 ");
 					strcat(initialMsg, articleNumber);
-					strcat(initialMsg, " articulo recuperado");
+					strcat(initialMsg, " cabeza recuperada");
 					sendMsg(initialMsg);
 
 					FILE *f;
@@ -400,6 +412,7 @@ void commandHead(char *str){
 					if((f = fopen(path, "r")) == NULL){
 						perror("Error abriendo archivo");
 					} else{
+						articleFound = 1;
 						fseek(f, 0, SEEK_SET);
 						int flag = 1;
 						while(fgets(buff, lenGlobal, f) && flag){
@@ -417,6 +430,10 @@ void commandHead(char *str){
 			}
 		}
 	}
+
+	if(!articleFound){
+		sendMsg("423 Articulo no encontrado");
+	}
 }
 
 void commandBody(char *str){
@@ -428,12 +445,14 @@ void commandBody(char *str){
 	char buff[lenGlobal];
 
 	if(selectedGroupPath == NULL){
-		sendMsg("500 No se ha seleccionado ningun grupo (GROUP)");
+		sendMsg("412 No se ha seleccionado ningun grupo (GROUP)");
 		return;
 	} 
 
 	DIR *d;
 	struct dirent *dir;
+
+	int articleFound = 0;
 
 	d = opendir(selectedGroupPath);
 
@@ -457,9 +476,9 @@ void commandBody(char *str){
 
 					//Lectura y envio del articulo
 					char *initialMsg = malloc(300);
-					strcpy(initialMsg, "223 ");
+					strcpy(initialMsg, "222 ");
 					strcat(initialMsg, articleNumber);
-					strcat(initialMsg, " articulo recuperado");
+					strcat(initialMsg, " cuerpo recuperado");
 					sendMsg(initialMsg);
 
 					FILE *f;					
@@ -468,6 +487,7 @@ void commandBody(char *str){
 						perror("Error abriendo archivo");
 					} else{
 						fseek(f, 0, SEEK_SET);
+						articleFound = 1;
 						int bodyReached = 0;
 						while(fgets(buff, lenGlobal, f)){							
 							if(!strcmp(buff, "\r\n") || !strcmp(buff, "\n")){
@@ -481,6 +501,9 @@ void commandBody(char *str){
 				}
 			}
 		}
+	}
+	if(!articleFound){
+		sendMsg("423 Articulo no encontrado");
 	}
 }
 
@@ -686,6 +709,9 @@ void commandPost(){
 		
 
 		buf[i] = '\0';
+		char *pos;
+		if ((pos=strchr(buf, '\r')) != NULL)
+		*pos = '\0';
 
 		strcpy(bufCopy, buf);
 

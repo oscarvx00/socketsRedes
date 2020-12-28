@@ -35,6 +35,9 @@
 #define TIMEOUT 6
 #define MAXHOST 512
 
+#define MODE_MANUAL 0
+#define MODE_FILE 1
+
 void clientTCP(char *hostN);
 void clientUDP();
 
@@ -46,6 +49,11 @@ void handler()
 
 void functionPostTCP(int s);
 void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in clientAddr);
+
+
+FILE *f;
+int mode;
+
 
 /*
  *			M A I N
@@ -64,11 +72,20 @@ int argc;
 char *argv[];
 {
     
-
-	if (argc != 3) {//AQUI VA UN 4
-		fprintf(stderr, "Usage:  %s <remote host> <TCP/UDP> >ficheroOrdenes.txt>\n", argv[0]);
+	if(argc == 3){
+		mode = MODE_MANUAL;
+	} else if(argc == 4){
+		mode = MODE_FILE;
+		if((f = fopen(argv[3], "r")) == NULL){
+		fprintf(stderr, "Error abriendo fichero de ordenes");
 		exit(1);
 	}
+	} else{
+		fprintf(stderr, "Usage:  %s <remote host> <TCP/UDP> <ficheroOrdenes.txt> (Si no se proporciona fichero de ordenes será modo manual)\n", argv[0]);
+		exit(1);
+	}
+
+	
 
     if(!strcmp("TCP", argv[2]))
         clientTCP(argv[1]);
@@ -85,63 +102,7 @@ char *argv[];
 
 }
 
-void functionPostTCP(int s){
 
-	char buf[TAM_BUFFER];
-	char *pos;
-
-	int i, j;
-	//Recibimos mensaje de confirmacion
-
-	i = recv(s, buf, TAM_BUFFER, 0);
-			if (i == -1) {
-				//perror(argv[0]);
-				//fprintf(stderr, "%s: error reading result\n", argv[0]);
-				exit(1);
-			} else if(i == 0){//EOF
-				//flag = 0;
-				//printf("CLIENTE SALE");
-				//break;
-			}
-				/* The reason this while loop exists is that there
-				* is a remote possibility of the above recv returning
-				* less than TAM_BUFFER bytes.  This is because a recv returns
-				* as soon as there is some data, and will not wait for
-				* all of the requested data to arrive.  Since TAM_BUFFER bytes
-				* is relatively small compared to the allowed TCP
-				* packet sizes, a partial receive is unlikely.  If
-				* this example had used 2048 bytes requests instead,
-				* a partial receive would be far more likely.
-				* This loop will keep receiving until all TAM_BUFFER bytes
-				* have been received, thus guaranteeing that the
-				* next recv at the top of the loop will start at
-				* the begining of the next reply.
-				*/
-			while (i < TAM_BUFFER) {
-				j = recv(s, &buf[i], TAM_BUFFER-i, 0);
-				if (j == -1) {
-						//perror(argv[0]);
-						//fprintf(stderr, "%s: error reading result\n", argv[0]);
-						exit(1);
-				}
-				i += j;
-			}
-			printf("\nC: %s\n", buf);
-
-
-	do{
-	fgets(buf, 512, stdin);
-	if ((pos=strchr(buf, '\n')) != NULL)
-    *pos = '\0';
-
-			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
-				//fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
-				//fprintf(stderr, "on send number %d\n", i);
-				exit(1);
-			}
-	} while(strcmp(buf, "."));
-
-}
 
 
 void clientTCP(char *hostN){
@@ -242,12 +203,20 @@ void clientTCP(char *hostN){
 	int flag = 1;		
 
 	while(flag){
+
+	if(mode == MODE_MANUAL){
 	
-	printf("\n\nIntroduce comando: ");
-	char *pos;
-	fgets(buf, 512, stdin);
-	if ((pos=strchr(buf, '\n')) != NULL)
-    *pos = '\0';
+		printf("\n\nIntroduce comando: ");
+		char *pos;
+		fgets(buf, 512, stdin);
+		if ((pos=strchr(buf, '\n')) != NULL)
+		*pos = '\0';
+	} else{
+		if(fgets(buf, TAM_BUFFER, f) == NULL){
+			//perror("Error leyendo archivo de ordenes");
+			return;
+		}
+	}
 
 		//printf("\nIntroduce comado: ");
 		//scanf("%s", buf);
@@ -260,10 +229,10 @@ void clientTCP(char *hostN){
 				exit(1);
 			}
 
-			if(!strcmp(buf, "POST")){
+			if(!strcmp(buf, "POST\r\n")){
 				//POSTING
 				functionPostTCP(s);
-			} else if(!strcmp("QUIT", buf)){
+			} else if(!strcmp("QUIT\r\n", buf)){
 				flag = 0;
 			}
 
@@ -341,6 +310,78 @@ void clientTCP(char *hostN){
     /* Print message indicating completion of task. */
 	time(&timevar);
 	printf("All done at %s", (char *)ctime(&timevar));
+
+}
+
+
+void functionPostTCP(int s){
+
+	char buf[TAM_BUFFER];
+	char *pos;
+
+	int i, j;
+	//Recibimos mensaje de confirmacion
+
+	i = recv(s, buf, TAM_BUFFER, 0);
+			if (i == -1) {
+				//perror(argv[0]);
+				//fprintf(stderr, "%s: error reading result\n", argv[0]);
+				exit(1);
+			} else if(i == 0){//EOF
+				//flag = 0;
+				//printf("CLIENTE SALE");
+				//break;
+			}
+				/* The reason this while loop exists is that there
+				* is a remote possibility of the above recv returning
+				* less than TAM_BUFFER bytes.  This is because a recv returns
+				* as soon as there is some data, and will not wait for
+				* all of the requested data to arrive.  Since TAM_BUFFER bytes
+				* is relatively small compared to the allowed TCP
+				* packet sizes, a partial receive is unlikely.  If
+				* this example had used 2048 bytes requests instead,
+				* a partial receive would be far more likely.
+				* This loop will keep receiving until all TAM_BUFFER bytes
+				* have been received, thus guaranteeing that the
+				* next recv at the top of the loop will start at
+				* the begining of the next reply.
+				*/
+			while (i < TAM_BUFFER) {
+				j = recv(s, &buf[i], TAM_BUFFER-i, 0);
+				if (j == -1) {
+						//perror(argv[0]);
+						//fprintf(stderr, "%s: error reading result\n", argv[0]);
+						exit(1);
+				}
+				i += j;
+			}
+			printf("\nC: %s\n", buf);
+
+
+	do{
+		if(mode == MODE_MANUAL){
+		
+			printf("\n\nIntroduce comando: ");
+			char *pos;
+			fgets(buf, 512, stdin);
+			if ((pos=strchr(buf, '\n')) != NULL)
+			*pos = '\0';
+		} else{
+			if(fgets(buf, TAM_BUFFER, f) == NULL){
+				//perror("Error leyendo archivo de ordenes");
+				return;
+			}
+		}
+
+	/*printf("\nPOST: %s", buf);
+	fflush(stdout);*/
+
+			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
+				//fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
+				//fprintf(stderr, "on send number %d\n", i);
+				exit(1);
+			}
+	} while(strcmp(buf, "."));
 
 }
 
@@ -427,11 +468,19 @@ void clientUDP(char *hostN){
 	
 	while(flag){
 
-		printf("\n\nIntroduce comando: ");
-		char *pos;
-		fgets(buf, 512, stdin);
-		if ((pos=strchr(buf, '\n')) != NULL)
-		*pos = '\0';
+		if(mode == MODE_MANUAL){
+		
+			printf("\n\nIntroduce comando: ");
+			char *pos;
+			fgets(buf, 512, stdin);
+			if ((pos=strchr(buf, '\n')) != NULL)
+			*pos = '\0';
+		} else{
+			if(fgets(buf, TAM_BUFFER, f) == NULL){
+				//perror("Error leyendo archivo de ordenes");
+				return;
+			}
+		}
 
 
 
@@ -497,9 +546,19 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 
 
 	do{
-	fgets(buf, 512, stdin);
-	if ((pos=strchr(buf, '\n')) != NULL)
-    *pos = '\0';
+		if(mode == MODE_MANUAL){
+		
+			printf("\n\nIntroduce comando: ");
+			char *pos;
+			fgets(buf, 512, stdin);
+			if ((pos=strchr(buf, '\n')) != NULL)
+			*pos = '\0';
+		} else{
+			if(fgets(buf, TAM_BUFFER, f) == NULL){
+				//perror("Error leyendo archivo de ordenes");
+				return;
+			}
+		}
 
 			if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&sAddr,
 				sizeof(sAddr)) == -1) {
