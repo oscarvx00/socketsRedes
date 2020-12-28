@@ -60,7 +60,7 @@ int logSem;
  */
  
 void serverTCP(int s, struct sockaddr_in peeraddr_in);
-void serverUDP(int s);
+void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr);
 void errout(char *);		/* declare error out routine */
 
 int FIN = 0;             /* Para el cierre ordenado */
@@ -85,7 +85,7 @@ char *argv[];
     fd_set readmask;
     int numfds,s_mayor;
     
-    //char buffer[BUFFERSIZE];	/* buffer for packets to be read into */
+    char buffer[TAM_BUFFER];	/* buffer for packets to be read into */
     
     struct sigaction vec;
 
@@ -292,16 +292,25 @@ char *argv[];
                     }
 
                 buffer[cc]='\0';*/
-                switch(fork()){
-					case -1:
-						break;
-					case 0:
-						serverUDP (s_UDP);
-						exit(0);
-					default:
-						close(s_UDP);
-						break;		
-				}
+
+				cc = recvfrom(s_UDP, buffer, TAM_BUFFER, 0,
+				(struct sockaddr *)&clientaddr_in, &addrlen);
+
+
+				if ( cc == -1) {
+					perror("Error recvfrom: ");
+					printf("recvfrom error\n");
+					exit (1);
+					}
+				
+
+				buffer[cc]='\0';
+				char *pos;
+				if ((pos=strchr(buffer, '\r')) != NULL)
+				*pos = '\0';
+
+				serverUDP(s_UDP, buffer, clientaddr_in);
+                
                 }
           }
 		}   /* Fin del bucle infinito de atenci�n a clientes */
@@ -468,7 +477,7 @@ void errout(char *hostname)
  *	logging information to stdout.
  *
  */
-void serverUDP(int s)
+void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 {
 
 	struct sockaddr_in clientaddr_in;	/* for peer socket address */
@@ -479,6 +488,7 @@ void serverUDP(int s)
 	int cc;
 	int reqcnt = 0;
 
+	clientaddr_in = initAddr;
 	socklen_t addrlen = sizeof(clientaddr_in);
 
 	getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in),
@@ -486,37 +496,50 @@ void serverUDP(int s)
 
 	int flag = 1;
 
-	sprintf(buf, "Startup from %s",
+	/*sprintf(buf, "Startup from %s",
 		hostname);
 
-		writeLog(buf,logSem, "UDP", clientaddr_in.sin_port);
+	writeLog(buf,logSem, "UDP", clientaddr_in.sin_port);*/
+
+	strcpy(buf, initBuf);
 
 
-	while(flag){
+	//while(flag){
 
-		cc = recvfrom(s, buf, TAM_BUFFER, 0,
-			(struct sockaddr *)&clientaddr_in, &addrlen);
-		if ( cc == -1) {
-			perror("Error recvfrom: ");
-			printf("recvfrom error\n");
-			exit (1);
-			}
+		/*if(reqcnt > 0){
+			cc = recvfrom(s, buf, TAM_BUFFER, 0,
+				(struct sockaddr *)&clientaddr_in, &addrlen);
 
-		buf[cc]='\0';
+
+
+			reqcnt++;
+
+			if ( cc == -1) {
+				perror("Error recvfrom: ");
+				printf("recvfrom error\n");
+				exit (1);
+				}
+			
+
+			buf[cc]='\0';
+		}
+
+
 		char *pos;
 		if ((pos=strchr(buf, '\r')) != NULL)
-		*pos = '\0';
+		*pos = '\0';*/
+
 
 		writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
-		flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 
-		reqcnt++;
-	}
+		commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 
-	close(s);
+	//}
 
-	sprintf(buf, "Completed %s, %d requests\n",
+	//close(s);
+
+	/*sprintf(buf, "Completed %s, %d requests\n",
 		hostname, reqcnt);
-	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
+	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);*/
 
  }

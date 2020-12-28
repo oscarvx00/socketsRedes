@@ -680,6 +680,9 @@ void commandPost(){
 
 	sendMsg("240 Subiendo un articulo, finalice con una linea que solo contenga un punto");
 
+	printf("AQUI");
+	fflush(stdout);
+
 
 	do{	
 

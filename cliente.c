@@ -543,12 +543,13 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 
 			printf("\nC: %s\n", buf);
 
+	printf("Cliente aqui");
+	fflush(stdout);
 
 
 	do{
 		if(mode == MODE_MANUAL){
 		
-			printf("\n\nIntroduce comando: ");
 			char *pos;
 			fgets(buf, 512, stdin);
 			if ((pos=strchr(buf, '\n')) != NULL)
@@ -559,6 +560,9 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 				return;
 			}
 		}
+
+		printf("SEND: %s\n", buf);
+		fflush(stdout);
 
 			if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&sAddr,
 				sizeof(sAddr)) == -1) {
