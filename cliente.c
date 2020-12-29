@@ -52,6 +52,8 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 
 
 FILE *f;
+FILE *fLog;
+char *fLogName;
 int mode;
 
 
@@ -96,10 +98,12 @@ char *argv[];
 		exit(1);
     }
 
+	if(mode == MODE_FILE){
+		fclose(fLog);
+		fclose(f);
+	}
 
-
-
-
+	return 0;
 }
 
 
@@ -197,10 +201,30 @@ void clientTCP(char *hostN){
 	 * that does require it.
 	 */
 
-	printf("Connected to %s on port %u at %s",
-			hostName, ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
+	
 
-	int flag = 1;		
+	int flag = 1;
+
+	if(mode == MODE_FILE){
+		fLogName = malloc(20);
+		sprintf(fLogName, "%u.txt", ntohs(myaddr_in.sin_port));
+		printf("LOG NAME: %s", fLogName);
+
+		if((fLog = fopen(fLogName, "w")) == NULL){
+			printf("\nError abriendo archivo de log");
+			exit(-1);
+		}
+		free(fLogName);	
+	}	
+
+	if(mode == MODE_MANUAL){
+		printf("Connected to %s on port %u at %s",
+			hostName, ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
+	} else{
+		fprintf(fLog, "Connected to %s on port %u at %s",
+			hostName, ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
+	}
+	
 
 	while(flag){
 
@@ -213,54 +237,25 @@ void clientTCP(char *hostN){
 		*pos = '\0';
 	} else{
 		if(fgets(buf, TAM_BUFFER, f) == NULL){
-			//perror("Error leyendo archivo de ordenes");
-			return;
+			if(!feof(f)){
+				perror("Error leyendo archivo de ordenes");
+				return;
+			}
 		}
 	}
 
-		//printf("\nIntroduce comado: ");
-		//scanf("%s", buf);
-		//for (i=20; i<=25; i++) {
-			//*buf = i;
-			//strcpy(buf, "LIST c");
 			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
 				fprintf(stderr, "Connection aborted on error ");
 				fprintf(stderr, "on send number %d\n", i);
 				exit(1);
 			}
 
-			if(!strcmp(buf, "POST\r\n")){
+			if(!strcmp(buf, "POST\r\n") || !!strcmp(buf, "POST")){
 				//POSTING
 				functionPostTCP(s);
-			} else if(!strcmp("QUIT\r\n", buf)){
+			} else if(!strcmp("QUIT\r\n", buf) || !strcmp("QUIT", buf)){
 				flag = 0;
 			}
-
-
-
-
-		//}
-
-			/* Now, shutdown the connection for further sends.
-			* This will cause the server to receive an end-of-file
-			* condition after it has received all the requests that
-			* have just been sent, indicating that we will not be
-			* sending any further requests.
-			*/
-		/*if (shutdown(s, 1) == -1) {
-			perror(argv[0]);
-			fprintf(stderr, "%s: unable to shutdown socket\n", argv[0]);
-			exit(1);
-		}*/
-
-			/* Now, start receiving all of the replys from the server.
-			* This loop will terminate when the recv returns zero,
-			* which is an end-of-file condition.  This will happen
-			* after the server has sent all of its replies, and closed
-			* its end of the connection.
-			*/
-		//while (i = recv(s, buf, TAM_BUFFER, 0)) {
-		//int numReceived;
 
 		do{	
 			i = recv(s, buf, TAM_BUFFER, 0);
@@ -270,7 +265,6 @@ void clientTCP(char *hostN){
 				exit(1);
 			} else if(i == 0){//EOF
 				flag = 0;
-				//printf("CLIENTE SALE");
 				break;
 			}
 				/* The reason this while loop exists is that there
@@ -296,7 +290,13 @@ void clientTCP(char *hostN){
 				}
 				i += j;
 			}
-			if(strcmp(buf, "\r\n"))	printf("\nC: %s", buf);
+			if(strcmp(buf, "\r\n")){
+				if(mode == MODE_MANUAL){
+					printf("\nC: %s", buf);
+				} else{
+					fprintf(fLog, "\n%s", buf);
+				}
+			}	
 				
 		} while(strcmp(buf, "\r\n"));
 				/* Print out message indicating the identity of this reply. */
@@ -309,7 +309,11 @@ void clientTCP(char *hostN){
 
     /* Print message indicating completion of task. */
 	time(&timevar);
-	printf("All done at %s", (char *)ctime(&timevar));
+	if(mode == MODE_MANUAL){
+		printf("All done at %s", (char *)ctime(&timevar));
+	} else{
+		fprintf(fLog, "All done at %s", (char *)ctime(&timevar));
+	}
 
 }
 
@@ -329,7 +333,6 @@ void functionPostTCP(int s){
 				exit(1);
 			} else if(i == 0){//EOF
 				//flag = 0;
-				//printf("CLIENTE SALE");
 				//break;
 			}
 				/* The reason this while loop exists is that there
@@ -355,8 +358,11 @@ void functionPostTCP(int s){
 				}
 				i += j;
 			}
-			printf("\nC: %s\n", buf);
-
+			if(mode == MODE_MANUAL){
+				printf("\nC: %s", buf);
+			} else{
+				fprintf(fLog, "\n%s", buf);
+			}
 
 	do{
 		if(mode == MODE_MANUAL){
@@ -368,20 +374,20 @@ void functionPostTCP(int s){
 			*pos = '\0';
 		} else{
 			if(fgets(buf, TAM_BUFFER, f) == NULL){
-				//perror("Error leyendo archivo de ordenes");
+				if(!feof(f)){
+				perror("Error leyendo archivo de ordenes");
 				return;
+			}
 			}
 		}
 
-	/*printf("\nPOST: %s", buf);
-	fflush(stdout);*/
 
 			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
 				//fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
 				//fprintf(stderr, "on send number %d\n", i);
 				exit(1);
 			}
-	} while(strcmp(buf, "."));
+	} while(strcmp(buf, ".\r\n"));
 
 }
 
@@ -433,9 +439,6 @@ void clientUDP(char *hostN){
 
 
 	bzero((char *) &clientAddr, sizeof(clientAddr));
-	/*clientAddr.sin_family = AF_INET;
-	clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	clientAddr.sin_port = 8437;*/
 
 	len = sizeof(clientAddr);
 	if (getsockname(s, (struct sockaddr *)&clientAddr, &len) == -1) {
@@ -462,6 +465,17 @@ void clientUDP(char *hostN){
 
 	freeaddrinfo(res);
 
+	if(mode == MODE_FILE){
+		fLogName = malloc(20);
+		sprintf(fLogName, "%u.txt", ntohs(clientAddr.sin_port));
+		printf("LOG NAME: %s", fLogName);
+
+		if((fLog = fopen(fLogName, "w")) == NULL){
+			printf("\nError abriendo archivo de log");
+			exit(-1);
+		}
+		free(fLogName);	
+	}
 
 	
 	int flag = 1;
@@ -477,8 +491,10 @@ void clientUDP(char *hostN){
 			*pos = '\0';
 		} else{
 			if(fgets(buf, TAM_BUFFER, f) == NULL){
-				//perror("Error leyendo archivo de ordenes");
+				if(!feof(f)){
+				perror("Error leyendo archivo de ordenes");
 				return;
+			}
 			}
 		}
 
@@ -491,10 +507,10 @@ void clientUDP(char *hostN){
         		exit(1);
         	}
 
-		if(!strcmp(buf, "POST")){
+		if(!strcmp(buf, "POST\r\n") || !strcmp(buf, "POST\r\n")){
 				//POSTING
 				functionPostUDP(s, serverAddr, clientAddr);
-		} else if(!strcmp("QUIT", buf)){
+		} else if(!strcmp("QUIT\r\n", buf) || !strcmp("QUIT", buf)){
 			flag = 0;
 		}
 
@@ -504,8 +520,13 @@ void clientUDP(char *hostN){
 			buf[i] = '\0';
 
 
-			printf("\n%s", buf);
-			fflush(stdout);
+			if(strcmp(buf, "\r\n")){
+				if(mode == MODE_MANUAL){
+					printf("\nC: %s", buf);
+				} else{
+					fprintf(fLog, "\n%s", buf);
+				}
+			}
 
 		} while(strcmp(buf, "\r\n"));
 
@@ -540,12 +561,11 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 				//printf("CLIENTE SALE");
 				//break;
 			}
-
-			printf("\nC: %s\n", buf);
-
-	printf("Cliente aqui");
-	fflush(stdout);
-
+	if(mode == MODE_MANUAL){
+		printf("\nC: %s", buf);
+	} else{
+		fprintf(fLog, "\n%s", buf);
+	}
 
 	do{
 		if(mode == MODE_MANUAL){
@@ -556,13 +576,13 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 			*pos = '\0';
 		} else{
 			if(fgets(buf, TAM_BUFFER, f) == NULL){
-				//perror("Error leyendo archivo de ordenes");
+				if(!feof(f)){
+				perror("Error leyendo archivo de ordenes");
 				return;
+			}
 			}
 		}
 
-		printf("SEND: %s\n", buf);
-		fflush(stdout);
 
 			if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&sAddr,
 				sizeof(sAddr)) == -1) {
@@ -570,6 +590,6 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
         		fprintf(stderr, "unable to send request\n");
         		exit(1);
         	}
-	} while(strcmp(buf, "."));
+	} while(strcmp(buf, ".\r\n"));
 
 }

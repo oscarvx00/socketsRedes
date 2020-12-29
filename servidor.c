@@ -496,50 +496,10 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 
 	int flag = 1;
 
-	/*sprintf(buf, "Startup from %s",
-		hostname);
-
-	writeLog(buf,logSem, "UDP", clientaddr_in.sin_port);*/
-
 	strcpy(buf, initBuf);
 
+	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
 
-	//while(flag){
-
-		/*if(reqcnt > 0){
-			cc = recvfrom(s, buf, TAM_BUFFER, 0,
-				(struct sockaddr *)&clientaddr_in, &addrlen);
-
-
-
-			reqcnt++;
-
-			if ( cc == -1) {
-				perror("Error recvfrom: ");
-				printf("recvfrom error\n");
-				exit (1);
-				}
-			
-
-			buf[cc]='\0';
-		}
-
-
-		char *pos;
-		if ((pos=strchr(buf, '\r')) != NULL)
-		*pos = '\0';*/
-
-
-		writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
-
-		commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
-
-	//}
-
-	//close(s);
-
-	/*sprintf(buf, "Completed %s, %d requests\n",
-		hostname, reqcnt);
-	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);*/
+	commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 
  }

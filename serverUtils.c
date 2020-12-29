@@ -50,14 +50,6 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 
 	clientaddr_inGlobal = clientaddr_in;
 	addrlenGlobal = addrlen;
-
-	//SE DEBE SPLITEAR PREVIAMENTE
-
-		/*printf("\033[0;31m");
-		printf("COMMAND IN: %s", bf);
-		printf("\033[0m");*/
-
-
 	
 	
 	Cola c = splitLine(bf, " ");
@@ -142,7 +134,6 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 }
 
 void sendMsg(char* msg){
-	//printf ("\033[32;1m %s \033[0m\n", msg);
 
 	int nc;
 
@@ -156,9 +147,7 @@ void sendMsg(char* msg){
 					0, (struct sockaddr *) &clientaddr_inGlobal, addrlenGlobal);
 			if ( nc == -1) {
 				perror("serverUDP: ");
-				fflush(stdout);
-				//printf("%s: sendto error\n", "serverUDP");
-				exit(-1);
+				//exit(-1);
 			}  
 			break;
 		case 2:
@@ -181,20 +170,11 @@ Cola splitLine(char *bf, char *character){
 	char bfCopy[512];
 	strcpy(bfCopy, bf);
 
-	//printf("BUFFER: %s\nCOPY: %s\nCOMP: %d", bf, bfCopy, strcmp(bf, bfCopy));
-
-	/*if(colaCreaVacia(&c) != 0){
-		printf("\033[0;31m");
-		printf("ERROR CREANDO COLA COMMAND");
-		printf("\033[0m");
-		exit(-1);
-	}*/
 	colaCreaVacia(&c);
 
 	char* token = strtok(bfCopy, character);
 
 	while(token != NULL){
-	//printf("\n%s", token);
 		colaInserta(&c, token);
 		token = strtok(NULL, character);
 	}
@@ -309,7 +289,6 @@ void commandArticle(char *str){
 	if(d){
 		while((dir = readdir(d)) != NULL){
 			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
-				//printf("\n\tSUBFOLDER: %s", dir->d_name);
 
 				if(!strcmp(articleNumber, dir->d_name)){
 					char *path;
@@ -385,7 +364,6 @@ void commandHead(char *str){
 	if(d){
 		while((dir = readdir(d)) != NULL){
 			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
-				//printf("\n\tSUBFOLDER: %s", dir->d_name);
 
 				if(!strcmp(articleNumber, dir->d_name)){
 					char *path;
@@ -461,7 +439,6 @@ void commandBody(char *str){
 	if(d){
 		while((dir = readdir(d)) != NULL){
 			if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
-				//printf("\n\tSUBFOLDER: %s", dir->d_name);
 
 				if(!strcmp(articleNumber, dir->d_name)){
 					char *path;
@@ -563,13 +540,11 @@ void commandNewNews(char *loc, char *date, char *time){
 
 	location = malloc(strlen(fileStart) + strlen(tema) + strlen(subtema) + 2);
 	
-	//sprintf(location, "%s/%s", tema, subtema);
 	strcpy(location, fileStart);
 	strcat(location, tema);
 	strcat(location, "/");
 	strcat(location, subtema);
 
-	//printf("LOCATION: %s", location);
 
 	
 	DIR *d;
@@ -680,9 +655,6 @@ void commandPost(){
 
 	sendMsg("240 Subiendo un articulo, finalice con una linea que solo contenga un punto");
 
-	printf("AQUI");
-	fflush(stdout);
-
 
 	do{	
 
@@ -694,7 +666,6 @@ void commandPost(){
 					exit(1);
 				} else if(i == 0){//EOF
 					flag = 0;
-					//printf("CLIENTE SALE");
 					break;
 				}
 				break;
@@ -718,15 +689,6 @@ void commandPost(){
 
 		strcpy(bufCopy, buf);
 
-		/*while (i < lenGlobal) {
-			j = recv(sockfdGlobal, &buf[i], lenGlobal-i, flagGlobal);
-			if (j == -1) {
-					perror("ERROR RECV");
-					exit(1);
-			}
-			i += j;
-		}*/
-		//printf("\nS: %s", buf);
 		if(!errorFound){
 			if(lineCount == 0){
 				//Newsgroups, acceder a ruta y crear nuevo archivo
@@ -759,8 +721,6 @@ void commandPost(){
 
 							if(d){
 								while((dir = readdir(d)) != NULL){
-									//printf("%s", dir->d_name);
-									//sprintf(buf, "\n%s", dir->d_name);
 									if(strcmp(".", dir->d_name) && strcmp("..", dir->d_name)){
 										int num = atoi(dir->d_name);
 										if(num > articleNumber){
