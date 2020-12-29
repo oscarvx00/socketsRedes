@@ -259,8 +259,8 @@ void commandGroup(char* str){
 	selectedGroupPath = malloc(strlen(location) + 2);
 	strcpy(selectedGroupPath, location);
 
-	free(groupInput);
-	free(location);
+	if(groupInput != NULL) free(groupInput);
+	if(location != NULL) free(location);
 }
 
 
@@ -615,9 +615,11 @@ void commandNewNews(char *loc, char *date, char *time){
 						snprintf(buff, lenGlobal, "%s %s %s", dir->d_name, subject, id);
 						sendMsg(buff);
 					}
-					free(subject); free(id);
+					if(subject != NULL) free(subject); 
+					if(id != NULL) free(id);
 				}
-				free(path);
+				if(path != NULL)	free(path);
+				
 			}
 		}
 		closedir(d);

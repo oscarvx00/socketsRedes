@@ -250,7 +250,7 @@ void clientTCP(char *hostN){
 				exit(1);
 			}
 
-			if(!strcmp(buf, "POST\r\n") || !!strcmp(buf, "POST")){
+			if(!strcmp(buf, "POST\r\n") || !strcmp(buf, "POST")){
 				//POSTING
 				functionPostTCP(s);
 			} else if(!strcmp("QUIT\r\n", buf) || !strcmp("QUIT", buf)){
@@ -441,17 +441,19 @@ void clientUDP(char *hostN){
 	bzero((char *) &clientAddr, sizeof(clientAddr));
 
 	len = sizeof(clientAddr);
-	if (getsockname(s, (struct sockaddr *)&clientAddr, &len) == -1) {
-		perror("Error getsockname TCP: ");
-		fprintf(stderr, "unable to read socket address\n");
-		exit(1);
-	 }
+
 
 	if(bind(s, (struct sockaddr *) &clientAddr, sizeof(clientAddr)) < 0){
 		perror("Error bind: ");
 		close(s);
 		exit(-1);
 	}
+
+	if (getsockname(s, (struct sockaddr *)&clientAddr, &len) == -1) {
+		perror("Error getsockname TCP: ");
+		fprintf(stderr, "unable to read socket address\n");
+		exit(1);
+	 }
 
 
 
