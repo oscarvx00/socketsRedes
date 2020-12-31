@@ -562,6 +562,8 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 				perror("Error recvfrom: ");
 				printf("recvfrom error\n");
 				exit (1);
+				} else if(cc == 0){
+					break;
 				}
 			
 
@@ -572,8 +574,6 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 			
 		}
 
-		
-		int flag = 1;
 
 		writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
 
@@ -583,12 +583,13 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 		flag = commandIn(s_UDP, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 	}
 
+
 	sprintf(buf, "Completed %s, %d requests\n",
 		hostname, reqcnt);
 	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
 
 
-	//close(s_UDP);
+	close(s_UDP);
 
 	exit(0);
 
