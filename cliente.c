@@ -502,7 +502,6 @@ void clientUDP(char *hostN){
 		}
 
 
-
 		if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&serverAddr,
 				sizeof(serverAddr)) == -1) {
         		perror("Error sendto: ");

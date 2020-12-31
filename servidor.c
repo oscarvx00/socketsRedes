@@ -481,25 +481,99 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 {
 
 	struct sockaddr_in clientaddr_in;	/* for peer socket address */
+	socklen_t addrlen;
+
+	struct sockaddr_in newServerAddr;
 
 	char buf[512];
-	char hostname[MAXHOST];		
+	char hostname[MAXHOST];	
+
+	int s_UDP;	
 
 	int cc;
 	int reqcnt = 0;
 
-	clientaddr_in = initAddr;
-	socklen_t addrlen = sizeof(clientaddr_in);
-
-	getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in),
-                           hostname,MAXHOST,NULL,0,0);
-
 	int flag = 1;
+
+
+
+	switch(fork()){
+		case -1:
+			perror("Error fork");
+			exit(-1);
+		case 0:
+			s_UDP = socket (AF_INET, SOCK_DGRAM, 0);
+			if (s_UDP == -1) {
+				//perror(argv[0]);
+				printf("unable to create socket UDP\n");
+				exit(1);
+			}
+			memset(&newServerAddr, 0, sizeof(struct sockaddr_in));
+			/* Bind the server's address to the socket. */
+			if (bind(s_UDP, (struct sockaddr *) &newServerAddr, sizeof(struct sockaddr_in)) == -1) {
+				//perror(argv[0]);
+				printf("unable to bind address UDP\n");
+				exit(1);
+				}
+
+			clientaddr_in = initAddr;
+			socklen_t addrlen = sizeof(clientaddr_in);
+
+			getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in),
+								hostname,MAXHOST,NULL,0,0);
+
+
+			break;
+		default:
+			//Proceso servidor.
+			return;	
+	}
+
+	sprintf(buf, "Startup from %s",
+		hostname);
+
+		writeLog(buf,logSem, "TCP", clientaddr_in.sin_port);
+
+	printf("ENVIANDO A %u DESDE &u", ntohs(clientaddr_in.sin_port), ntohs(newServerAddr.sin_port));
+
+	
 
 	strcpy(buf, initBuf);
 
-	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
+	while(flag){
+		if(reqcnt > 0){
 
-	commandIn(s, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
+			cc = recvfrom(s_UDP, buf, TAM_BUFFER, 0,
+				(struct sockaddr *)&clientaddr_in, &addrlen);
+
+
+			if ( cc == -1) {
+				perror("Error recvfrom: ");
+				printf("recvfrom error\n");
+				exit (1);
+				}
+			
+
+			buf[cc]='\0';
+			char *pos;
+			if ((pos=strchr(buf, '\r')) != NULL)
+			*pos = '\0';
+			
+		}
+
+		
+		int flag = 1;
+
+		writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
+
+		reqcnt++;
+
+		flag = commandIn(s_UDP, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
+	}
+
+	close(s);
+	close(s_UDP);
+
+	exit(0);
 
  }
