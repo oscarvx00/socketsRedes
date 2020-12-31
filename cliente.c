@@ -405,7 +405,7 @@ void clientUDP(char *hostN){
 	struct sockaddr_in serverAddr, clientAddr;
 	struct hostent *hp;
 	struct in_addr reqaddr;
-	socklen_t len;
+	socklen_t lenC, lenS;
 
 	struct addrinfo hints, *res;
 
@@ -440,7 +440,8 @@ void clientUDP(char *hostN){
 
 	bzero((char *) &clientAddr, sizeof(clientAddr));
 
-	len = sizeof(clientAddr);
+	lenC = sizeof(clientAddr);
+	lenS = sizeof(serverAddr);
 
 
 	if(bind(s, (struct sockaddr *) &clientAddr, sizeof(clientAddr)) < 0){
@@ -449,7 +450,7 @@ void clientUDP(char *hostN){
 		exit(-1);
 	}
 
-	if (getsockname(s, (struct sockaddr *)&clientAddr, &len) == -1) {
+	if (getsockname(s, (struct sockaddr *)&clientAddr, &lenC) == -1) {
 		perror("Error getsockname TCP: ");
 		fprintf(stderr, "unable to read socket address\n");
 		exit(1);
@@ -518,7 +519,7 @@ void clientUDP(char *hostN){
 
 		do{
 
-			i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &clientAddr, &len);
+			i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &serverAddr, &lenS);
 			buf[i] = '\0';
 
 
