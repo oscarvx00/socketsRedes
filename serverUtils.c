@@ -855,7 +855,8 @@ void commandPost(){
 		if(errorFound){
 			remove(location);
 		}
-	}	
+	}
+
 }
 
 

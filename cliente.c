@@ -208,7 +208,7 @@ void clientTCP(char *hostN){
 	if(mode == MODE_FILE){
 		fLogName = malloc(20);
 		sprintf(fLogName, "%u.txt", ntohs(myaddr_in.sin_port));
-		printf("LOG NAME: %s", fLogName);
+		//printf("LOG NAME: %s", fLogName);
 
 		if((fLog = fopen(fLogName, "w")) == NULL){
 			printf("\nError abriendo archivo de log");
@@ -367,7 +367,6 @@ void functionPostTCP(int s){
 	do{
 		if(mode == MODE_MANUAL){
 		
-			printf("\n\nIntroduce comando: ");
 			char *pos;
 			fgets(buf, 512, stdin);
 			if ((pos=strchr(buf, '\n')) != NULL)
@@ -387,8 +386,7 @@ void functionPostTCP(int s){
 				//fprintf(stderr, "on send number %d\n", i);
 				exit(1);
 			}
-	} while(strcmp(buf, ".\r\n"));
-
+	} while(strcmp(buf, ".\r\n") && strcmp(buf, "."));
 }
 
 
@@ -457,10 +455,6 @@ void clientUDP(char *hostN){
 	 }
 
 
-
-
-
-
 	bzero((char *) &serverAddr, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_addr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
@@ -471,7 +465,7 @@ void clientUDP(char *hostN){
 	if(mode == MODE_FILE){
 		fLogName = malloc(20);
 		sprintf(fLogName, "%u.txt", ntohs(clientAddr.sin_port));
-		printf("LOG NAME: %s", fLogName);
+		//printf("LOG NAME: %s", fLogName);
 
 		if((fLog = fopen(fLogName, "w")) == NULL){
 			printf("\nError abriendo archivo de log");
@@ -501,15 +495,15 @@ void clientUDP(char *hostN){
 			}
 		}
 
-
 		if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&serverAddr,
 				sizeof(serverAddr)) == -1) {
         		perror("Error sendto: ");
         		fprintf(stderr, "unable to send request\n");
         		exit(1);
         	}
+		
 
-		if(!strcmp(buf, "POST\r\n") || !strcmp(buf, "POST\r\n")){
+		if(!strcmp(buf, "POST\r\n") || !strcmp(buf, "POST")){
 				//POSTING
 				functionPostUDP(s, serverAddr, clientAddr);
 		} else if(!strcmp("QUIT\r\n", buf) || !strcmp("QUIT", buf)){
@@ -549,12 +543,12 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 	sAddr = serverAddr;
 	cAddr = clientAddr;
 
-	socklen_t len = sizeof(cAddr);
+	socklen_t len = sizeof(sAddr);
 	int i, j;
 
 	//Recibimos mensaje de confirmacion
 
-	i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &cAddr, &len);
+	i = recvfrom(s, buf, TAM_BUFFER, 0, (struct sockaddr *) &sAddr, &len);
 			if (i == -1) {
 				perror("Error recvfrom function post");
 				//fprintf(stderr, "%s: error reading result\n", argv[0]);
@@ -581,10 +575,9 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 				if(!feof(f)){
 				perror("Error leyendo archivo de ordenes");
 				return;
-			}
+				}
 			}
 		}
-
 
 			if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&sAddr,
 				sizeof(sAddr)) == -1) {
@@ -592,6 +585,6 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
         		fprintf(stderr, "unable to send request\n");
         		exit(1);
         	}
-	} while(strcmp(buf, ".\r\n"));
+	} while(strcmp(buf, ".\r\n") && strcmp(buf, "."));
 
 }

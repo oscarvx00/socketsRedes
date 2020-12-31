@@ -376,8 +376,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 */
 	sprintf(buf, "Startup from %s",
 		hostname);
-
-		writeLog(buf,logSem, "TCP", clientaddr_in.sin_port);
+	writeLog(buf,logSem, "TCP", clientaddr_in.sin_port);
 
 		/* Set the socket for a lingering, graceful close.
 		 * This will cause a final close of this socket to wait until all of the
@@ -402,7 +401,7 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		 */
 		int flag = 1;
 		
-while(flag){
+	while(flag){
 	//while (len = recv(s, buf, TAM_BUFFER, 0)) {
 		len = recv(s, buf, TAM_BUFFER, 0);
 		if (len == -1) errout(hostname);
@@ -431,12 +430,18 @@ while(flag){
 		if ((pos=strchr(buf, '\r')) != NULL)
 		*pos = '\0';
 			/* Increment the request count. */
+
+
+
+		/*printf("COMPARACION LIST: %d", strcmp(buf, "LIST"));
+		fflush(stdout);*/
+
 		reqcnt++;
 			writeLog(buf, logSem, "TCP", clientaddr_in.sin_port);
-			flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, clientaddr_in, 0);			
+		flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, clientaddr_in, sizeof(clientaddr_in));			
 			
 	//}		
-}
+	}
 
 
 	if (shutdown(s, 1) == -1) {
@@ -509,6 +514,7 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 				exit(1);
 			}
 			memset(&newServerAddr, 0, sizeof(struct sockaddr_in));
+			bzero((char *) &newServerAddr, sizeof(newServerAddr));
 			/* Bind the server's address to the socket. */
 			if (bind(s_UDP, (struct sockaddr *) &newServerAddr, sizeof(struct sockaddr_in)) == -1) {
 				//perror(argv[0]);
@@ -516,12 +522,17 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 				exit(1);
 				}
 
+			if (getsockname(s_UDP, (struct sockaddr *)&newServerAddr, &addrlen) == -1) {
+				perror("Error getsockname UDP");
+				fprintf(stderr, "unable to read socket address\n");
+				exit(1);
+			}
+
 			clientaddr_in = initAddr;
 			socklen_t addrlen = sizeof(clientaddr_in);
 
 			getnameinfo((struct sockaddr *)&clientaddr_in,sizeof(clientaddr_in),
 								hostname,MAXHOST,NULL,0,0);
-
 
 			break;
 		default:
@@ -529,12 +540,12 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 			return;	
 	}
 
+	close(s);
+
 	sprintf(buf, "Startup from %s",
 		hostname);
 
-		writeLog(buf,logSem, "TCP", clientaddr_in.sin_port);
-
-	printf("ENVIANDO A %u DESDE &u", ntohs(clientaddr_in.sin_port), ntohs(newServerAddr.sin_port));
+		writeLog(buf,logSem, "UDP", clientaddr_in.sin_port);
 
 	
 
@@ -568,11 +579,16 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 
 		reqcnt++;
 
+
 		flag = commandIn(s_UDP, buf, TAM_BUFFER, 0, hostname, UDP_MODE, clientaddr_in, addrlen);
 	}
 
-	close(s);
-	close(s_UDP);
+	sprintf(buf, "Completed %s, %d requests\n",
+		hostname, reqcnt);
+	writeLog(buf, logSem, "UDP", clientaddr_in.sin_port);
+
+
+	//close(s_UDP);
 
 	exit(0);
 
