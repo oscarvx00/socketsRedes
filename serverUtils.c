@@ -787,15 +787,16 @@ void commandPost(){
 				fputc('\n', f);
 			}
 
-			lineCount++;
+			
 		}
+		lineCount++;
 			
 	} while(strcmp(bufCopy, ".") && flag);
 
 
 	if(!errorFound){
 		//Incrementamos el numero de articulos
-		FILE *fAux;
+		FILE *fAux, *fGrupos;
 		
 		if((fAux = fopen("n_articulos", "r")) == NULL){
 			errorFound = 1;
@@ -814,34 +815,42 @@ void commandPost(){
 
 
 			//Actualizamos el fichero grupos.
-/*
+
 			struct grupo gStruc;
-			fpos_t pointerPos;
 
 			int result;
 
-			if((fAux = fopen("grupos", "r")) == NULL){
+			if((fGrupos = fopen("grupos", "r")) == NULL || (fAux = fopen("gruposAux", "w")) == NULL){
 				perror("Error abriendo archivo");
 			} else{
-				do{
-					fgetpos(fAux, &pointerPos);
-					result = fscanf(f, "%s %d %d %d %d %[^\n]", gStruc.loc, &gStruc.last, &gStruc.first, &gStruc.date, &gStruc.time, gStruc.descr);
+				while((result = fscanf(fGrupos, "%s %d %d %d %d %[^\n]", gStruc.loc, &gStruc.last, &gStruc.first, &gStruc.date, &gStruc.time, gStruc.descr)) != EOF){
+					//result = 
 
 					if(!strcmp(gStruc.loc, groupName)){
-						
-						break;			
+						fprintf(fAux, "%s %010d %010d %06d %06d %s\n", gStruc.loc, articleNumber, gStruc.first, gStruc.date, gStruc.time, gStruc.descr);			
+					} else{
+						fprintf(fAux, "%s %010d %010d %06d %06d %s\n", gStruc.loc, gStruc.last, gStruc.first, gStruc.date, gStruc.time, gStruc.descr);		
 					}
 					
-				} while(result != EOF);
+				}
 				fclose(fAux);
+				fclose(fGrupos);
 
-				fAux = fopen("grupos", "w");
+				if((fGrupos = fopen("grupos", "w")) == NULL || (fAux = fopen("gruposAux", "r")) == NULL){
+					perror("Error abriendo archivo");
+				} else{
+					while((result = fscanf(fAux, "%s %d %d %d %d %[^\n]", gStruc.loc, &gStruc.last, &gStruc.first, &gStruc.date, &gStruc.time, gStruc.descr)) != EOF){
 
-				fsetpos(fAux, &pointerPos);
-				fprintf(fAux, "%s %010d %010d %06d %06d %s\n", gStruc.loc, articleNumber, gStruc.first, gStruc.date, gStruc.time, gStruc.descr);
+					fprintf(fGrupos, "%s %010d %010d %06d %06d %s\n", gStruc.loc, gStruc.last, gStruc.first, gStruc.date, gStruc.time, gStruc.descr);
+
+					}
+				}
 
 				fclose(fAux);
-			}*/
+				fclose(fGrupos);
+
+
+			}
 		}
 
 		sendMsg("240 Articulo recibido correctamente.");
