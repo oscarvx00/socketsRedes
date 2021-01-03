@@ -1,6 +1,10 @@
 #ifndef SERVERUTILS_H
 #define SERVERUTILS_H
 
+#define TCP_MODE 0
+#define UDP_MODE 1
+#define TEST_MODE 2
+
 #include "cola.h"
 #include <sys/types.h>
 #include <sys/socket.h>

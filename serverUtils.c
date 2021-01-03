@@ -36,6 +36,27 @@ int addrlenGlobal;
 
 char *selectedGroupPath = NULL;
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandIn
+	Descripcion: recibe el buffer con los datos pasados por el cliente, se encarga de separar
+		el comando por cada " " y meterlo en una cola. El primer elemento de la cola será la
+		orden indicada.
+	Parametros de entrada:
+		int sockfd: descriptor de fichero del socket de comunicacion.
+		char *bf: buffer
+		size_t len: tamaño maximo del buffer (512)
+		int flag: flags de comunicacion del socket (0)
+		char *hostName: buffer que contiene el nombre del host.
+		int mode: modo del socket de comunicacion (TCP || UDP || TEST (Pruebas))
+		struct sockaddr_in clientaddr_in: estructura que contiene la direccion del cliente.
+		socklen_t addrlen: tamaño de la estructura.
+	Parametros de salida:
+		int: flag utilizado en el bucle del servidor, si el comando es QUIT devuelve 0 y
+			finaliza el proceso.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
+
 int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mode, struct sockaddr_in clientaddr_in, socklen_t addrlen){
 
 	int serverFlag = 1;
@@ -133,15 +154,26 @@ int commandIn(int sockfd, char *bf, size_t len, int flag, char* hostName, int mo
 
 }
 
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion sendMsg
+	Descripcion: se encarga de enviar un mensaje al cliente en los distintos modos de 
+		operación. (En el caso de test simplemente imprime por pantalla)
+	Parametros de entrada:
+		char *msg: buffer con el mensaje a enviar
+
+*////////////////////////////////////////////////////////////////////////////////////////////
+
 void sendMsg(char* msg){
 
 	int nc;
 
 	switch(socketMode){
-		case 0:
+		case TCP_MODE:
 			if (send(sockfdGlobal, msg, lenGlobal, flagGlobal) != lenGlobal) erroutUtils(hostNameGlobal);
 			break;
-		case 1:
+		case UDP_MODE:
 
 			nc = sendto (sockfdGlobal, msg, lenGlobal,
 					0, (struct sockaddr *) &clientaddr_inGlobal, addrlenGlobal);
@@ -150,7 +182,7 @@ void sendMsg(char* msg){
 				//exit(-1);
 			}  
 			break;
-		case 2:
+		case TEST_MODE:
 			printf("\n%s", msg);
 			break;
 	}
@@ -162,6 +194,19 @@ void erroutUtils(char *hostname)
 	printf("Connection with %s aborted on error\n", hostNameGlobal);
 	exit(1);     
 }
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion splitLine
+	Descripcion: divide el buffer de entrada en una serie de tokens dependiendo del caracter,
+		agrupa todos los tokens en una cola
+	Parametros de entrada:
+		char *bf: buffer con el contenido a "tokenizar"
+		char *character: caracter para realizae el spit
+	Parametros de salida:
+		Cola: cola con el buffer tokenizado
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 Cola splitLine(char *bf, char *character){
 
@@ -181,6 +226,16 @@ Cola splitLine(char *bf, char *character){
 
 	return c;
 }
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandList
+	Descripcion: procesa el comando LIST.
+		Lee el fichero grupos y se lo envía al cliente.
+	Parametros de entrada:
+		char *buf: buffer resultante de la cola. Parametro no usado.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void commandList(char *buf){
@@ -202,10 +257,19 @@ void commandList(char *buf){
 	sendMsg(".");
 }
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandGroup
+	Descripcion: procesa el comando GROUP.
+		Accede al directorio del grupo y devuelve el numero de articulos, numero del primero y del último.
+	Parametros de entrada:
+		char *str: buffer con la ruta del grupo separada por "."
+
+*////////////////////////////////////////////////////////////////////////////////////////////
+
 
 void commandGroup(char* str){
 
-	//Consulta los articulos del grupo, devolviendo numero de articulos, numero del primero y del ultimo
 	char *groupInput = malloc(strlen(str));
 	strcpy(groupInput, str);
 
@@ -261,8 +325,20 @@ void commandGroup(char* str){
 
 	if(groupInput != NULL) free(groupInput);
 	if(location != NULL) free(location);
+	if(msg != NULL) free(msg);
 }
 
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandArticle
+	Descripcion: procesa el comando ARTICLE.
+		Accede al directorio localizado en selectedGroupPath y recupera el articulo cuyo
+			numero es pasado como parametro
+	Parametros de entrada:
+		char *str: contiene el numero del articulo que se desea recuperar.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void commandArticle(char *str){
 
@@ -336,8 +412,22 @@ void commandArticle(char *str){
 		sendMsg("423 Articulo no encontrado");
 	}
 
+	if(articleNumber != NULL) free(articleNumber);
+	if(path != NULL) free(path);
+
 }
 
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandHead
+	Descripcion: procesa el comando HEAD.
+		Accede al directorio localizado en selectedGroupPath y recupera el la cabeza
+			del articulo cuyo numero es pasado como parametro
+	Parametros de entrada:
+		char *str: contiene el numero del articulo que se desea recuperar.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void commandHead(char *str){
 
@@ -412,6 +502,9 @@ void commandHead(char *str){
 	if(!articleFound){
 		sendMsg("423 Articulo no encontrado");
 	}
+
+	if(articleNumber != NULL) free(articleNumber);
+	if(path != NULL) free(path);
 }
 
 void commandBody(char *str){
