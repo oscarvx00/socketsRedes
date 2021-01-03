@@ -274,7 +274,7 @@ void commandGroup(char* str){
 	strcpy(groupInput, str);
 
 	char fileStart[] = "./articulos/";
-	char *location;
+	char *location = NULL;
 
 	int index = 0;
 
@@ -315,6 +315,9 @@ void commandGroup(char* str){
 		sprintf(msg, "%d %d %010d %010d %s", 211, count, first, last, groupInput);
 
 		sendMsg(msg);
+
+		if(msg != NULL) free(msg);
+		
 	} else{
 		sendMsg("501 Error de sintaxis en GROUP newsgroup / 411 Grupo no encontrado");
 	}
@@ -325,7 +328,6 @@ void commandGroup(char* str){
 
 	if(groupInput != NULL) free(groupInput);
 	if(location != NULL) free(location);
-	//if(msg != NULL) free(msg);
 }
 
 
@@ -505,7 +507,6 @@ void commandHead(char *str){
 	}
 
 	if(articleNumber != NULL) free(articleNumber);
-	//
 }
 
 /*///////////////////////////////////////////////////////////////////////////////////////////
@@ -633,7 +634,7 @@ void commandNewNews(char *loc, char *date, char *time){
 
 	char buff[lenGlobal];
 
-	char *groupInput = malloc(strlen(loc));
+	char *groupInput = malloc(strlen(loc) + 2);
 	strcpy(groupInput, loc);
 
 	Cola c = splitLine(loc, ".");
@@ -697,7 +698,7 @@ void commandNewNews(char *loc, char *date, char *time){
 					//fseek(f, 0, SEEK_SET);
 					int rowCount = 0;
 					char *d, *t;
-					char *subject, *id;
+					char *subject = NULL, *id = NULL;
 					while(fgets(buff, lenGlobal, f) && rowCount < 4 /*Leemos la cabecera*/){
 						if(rowCount == 2){
 							Cola cF = splitLine(buff, " ");
