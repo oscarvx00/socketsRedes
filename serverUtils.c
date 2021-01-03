@@ -178,7 +178,7 @@ void sendMsg(char* msg){
 			nc = sendto (sockfdGlobal, msg, lenGlobal,
 					0, (struct sockaddr *) &clientaddr_inGlobal, addrlenGlobal);
 			if ( nc == -1) {
-				perror("serverUDP: ");
+				perror("serverUDP");
 				//exit(-1);
 			}  
 			break;
@@ -325,7 +325,7 @@ void commandGroup(char* str){
 
 	if(groupInput != NULL) free(groupInput);
 	if(location != NULL) free(location);
-	if(msg != NULL) free(msg);
+	//if(msg != NULL) free(msg);
 }
 
 
@@ -403,6 +403,7 @@ void commandArticle(char *str){
 						}
 						fclose(f);
 					}
+					if(path != NULL) free(path);
 				} 
 			}
 		}
@@ -413,7 +414,6 @@ void commandArticle(char *str){
 	}
 
 	if(articleNumber != NULL) free(articleNumber);
-	if(path != NULL) free(path);
 
 }
 
@@ -422,7 +422,7 @@ void commandArticle(char *str){
 
 	Funcion commandHead
 	Descripcion: procesa el comando HEAD.
-		Accede al directorio localizado en selectedGroupPath y recupera el la cabeza
+		Accede al directorio localizado en selectedGroupPath y recupera la cabeza
 			del articulo cuyo numero es pasado como parametro
 	Parametros de entrada:
 		char *str: contiene el numero del articulo que se desea recuperar.
@@ -494,6 +494,7 @@ void commandHead(char *str){
 						}
 						fclose(f);
 					}
+					if(path != NULL) free(path);
 				}
 			}
 		}
@@ -504,8 +505,19 @@ void commandHead(char *str){
 	}
 
 	if(articleNumber != NULL) free(articleNumber);
-	if(path != NULL) free(path);
+	//
 }
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandBody
+	Descripcion: procesa el comando BODY.
+		Accede al directorio localizado en selectedGroupPath y recupera el cuerpo
+			del articulo cuyo numero es pasado como parametro
+	Parametros de entrada:
+		char *str: contiene el numero del articulo que se desea recuperar.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void commandBody(char *str){
 
@@ -568,6 +580,7 @@ void commandBody(char *str){
 						}
 						fclose(f);
 					}
+					if(path != NULL) free(path);
 				}
 			}
 		}
@@ -575,8 +588,21 @@ void commandBody(char *str){
 	if(!articleFound){
 		sendMsg("423 Articulo no encontrado");
 	}
+
+	if(articleNumber != NULL) free(articleNumber);
 }
 
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandNewGroups
+	Descripcion: procesa el comando NEWGROUPS.
+		Accede al fichero grupos y devuelve los grupos mas recientes que la fecha indicada.
+	Parametros de entrada:
+		char *date: fecha.
+		char *time: hora
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void commandNewGroups(char *date, char *time){
 
@@ -612,7 +638,7 @@ void commandNewNews(char *loc, char *date, char *time){
 
 	Cola c = splitLine(loc, ".");
 	char fileStart[] = "./articulos/";
-	char *location;
+	char *location = NULL;
 
 	int dateInt = atoi(date);
 	int timeInt = atoi(time);
@@ -720,8 +746,20 @@ void commandNewNews(char *loc, char *date, char *time){
 	} else{
 		sendMsg("501 Error de sintaxis en GROUP newsgroup");
 	}
+
+	if(groupInput != NULL) free(groupInput);
+	if(location != NULL) free(location);
 }
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion commandPost
+	Descripcion: procesa el comando POST.
+		Permite la introduccion de nuevos articulos. Entra en un bucle en el que solo sale
+			cuando el cliente le manda el "." final.
+			Los parametros obligatiorios en la cabeza son Newsgroups y Subject
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void commandPost(){
 
@@ -917,7 +955,6 @@ void commandPost(){
 				perror("Error abriendo archivo");
 			} else{
 				while((result = fscanf(fGrupos, "%s %d %d %d %d %[^\n]", gStruc.loc, &gStruc.last, &gStruc.first, &gStruc.date, &gStruc.time, gStruc.descr)) != EOF){
-					//result = 
 
 					if(!strcmp(gStruc.loc, groupName)){
 						fprintf(fAux, "%s %010d %010d %06d %06d %s\n", gStruc.loc, articleNumber, gStruc.first, gStruc.date, gStruc.time, gStruc.descr);			
@@ -941,13 +978,11 @@ void commandPost(){
 
 				fclose(fAux);
 				fclose(fGrupos);
-
-
 			}
 		}
 
 		sendMsg("240 Articulo recibido correctamente.");
-		//sendMsg(location);
+
 	} else{
 		sendMsg(errorCause);
 	}
@@ -958,11 +993,22 @@ void commandPost(){
 			remove(location);
 		}
 	}
-
 }
 
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
 
+	Funcion writeLog
+	Descripcion: escribe en el Log
+		Se encarga de escribir los comandos obtenidos en el LOG del servidor. Se utiliza un
+			semaforo para impedir que varios procesos escriban a la vez.
+	Parametros de entrada:
+		char *msg: contiene los datos que se desean escribir.
+		int sem: descriptor de fichero del semaforo.
+		char *prot: nombre del protocolo (TCP || UDP)
+		in_port_t: puerto por el que se realiza la comunicacion.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void writeLog(char *msg, int sem, char *prot, in_port_t port){
 
