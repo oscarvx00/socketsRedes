@@ -107,6 +107,17 @@ char *argv[];
 }
 
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion clientTCP
+	Descripcion: funcion cliente en modo TCP
+		Se encarga de crear el socket TCP y conectarse al servidor. Entra en un bucle en
+		el que va enviando peticiones al servidor y recibiendo respuestas. Sale del 
+		bucle cuando recibe QUIT.
+	Parametros de entrada:
+		char *hostN: buffer con el nombre del host.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void clientTCP(char *hostN){
@@ -217,6 +228,8 @@ void clientTCP(char *hostN){
 		free(fLogName);	
 	}	
 
+	//En modo manual se introducen los comandos por stdin, en modo file los lee de un fichero.
+
 	if(mode == MODE_MANUAL){
 		printf("Connected to %s on port %u at %s",
 			hostName, ntohs(myaddr_in.sin_port), (char *) ctime(&timevar));
@@ -299,10 +312,6 @@ void clientTCP(char *hostN){
 			}	
 				
 		} while(strcmp(buf, "\r\n"));
-				/* Print out message indicating the identity of this reply. */
-			//printf("Received result number %d\n", *buf);
-			
-		//}
 	}
 
 	close(s);
@@ -317,6 +326,17 @@ void clientTCP(char *hostN){
 
 }
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion functionPostTCP
+	Descripcion: funcion para realizar el comando POST.
+		En primer lugar lee la respuesta del servidor tras haberle enviado POST.
+		Posteriormente entra en un bucle en que le envia mensajes al servidor hasta que se
+		envia la linea final "."
+	Parametros de entrada:
+		int s: descriptor de fichero del socket
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void functionPostTCP(int s){
 
@@ -365,6 +385,7 @@ void functionPostTCP(int s){
 			}
 
 	do{
+		//Leemos contenido del articulo
 		if(mode == MODE_MANUAL){
 		
 			char *pos;
@@ -380,7 +401,7 @@ void functionPostTCP(int s){
 			}
 		}
 
-
+			//Enviamos linea del articulo
 			if (send(s, buf, TAM_BUFFER, 0) != TAM_BUFFER) {
 				//fprintf(stderr, "%s: Connection aborted on error ",	argv[0]);
 				//fprintf(stderr, "on send number %d\n", i);
@@ -389,6 +410,18 @@ void functionPostTCP(int s){
 	} while(strcmp(buf, ".\r\n") && strcmp(buf, "."));
 }
 
+
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion clientUDP
+	Descripcion: funcion cliente en modo UDP
+		Se encarga de crear el socket UDP y conectarse al servidor. Entra en un bucle en
+		el que va enviando peticiones al servidor y recibiendo respuestas. Sale del 
+		bucle cuando recibe QUIT.
+	Parametros de entrada:
+		char *hostN: buffer con el nombre del host.
+
+*////////////////////////////////////////////////////////////////////////////////////////////
 
 void clientUDP(char *hostN){
 
@@ -416,6 +449,7 @@ void clientUDP(char *hostN){
 	memset(&serverAddr, 0, sizeof(struct sockaddr_in));
 	
 
+	//Creamos el socket en un puerto efimero
 
 	if((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
 		perror("Error creando socket: ");
@@ -534,6 +568,20 @@ void clientUDP(char *hostN){
 }
 
 
+/*///////////////////////////////////////////////////////////////////////////////////////////
+
+	Funcion functionPostUDP
+	Descripcion: funcion para realizar el comando POST.
+		En primer lugar lee la respuesta del servidor tras haberle enviado POST.
+		Posteriormente entra en un bucle en que le envia mensajes al servidor hasta que se
+		envia la linea final "."
+	Parametros de entrada:
+		int s: descriptor de fichero del socket
+		struct sockaddr_in serverAddr: direccion del servidor
+		struct sockaddr_in: direccion de nuestro socket
+
+*////////////////////////////////////////////////////////////////////////////////////////////
+
 void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in clientAddr){
 
 	char buf[TAM_BUFFER];
@@ -563,6 +611,7 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 		fprintf(fLog, "\n%s", buf);
 	}
 
+	//Leemos contenido del articulo
 	do{
 		if(mode == MODE_MANUAL){
 		
@@ -578,7 +627,7 @@ void functionPostUDP(int s, struct sockaddr_in serverAddr, struct sockaddr_in cl
 				}
 			}
 		}
-
+			//Enviamos linea del articulo
 			if (sendto (s, buf, TAM_BUFFER, 0, (struct sockaddr *)&sAddr,
 				sizeof(sAddr)) == -1) {
         		perror("Error sendto: ");

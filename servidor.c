@@ -283,16 +283,6 @@ char *argv[];
                 */
 
 
-                /*cc = recvfrom(s_UDP, buffer, BUFFERSIZE - 1, 0,
-                   (struct sockaddr *)&clientaddr_in, &addrlen);
-                if ( cc == -1) {
-                    perror(argv[0]);
-                    printf("%s: recvfrom error\n", argv[0]);
-                    exit (1);
-                    }
-
-                buffer[cc]='\0';*/
-
 				cc = recvfrom(s_UDP, buffer, TAM_BUFFER, 0,
 				(struct sockaddr *)&clientaddr_in, &addrlen);
 
@@ -402,29 +392,9 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 		int flag = 1;
 		
 	while(flag){
-	//while (len = recv(s, buf, TAM_BUFFER, 0)) {
 		len = recv(s, buf, TAM_BUFFER, 0);
 		if (len == -1) errout(hostname);
-		//else if(len == 0) break; /* error from recv */
-			/* The reason this while loop exists is that there
-			 * is a remote possibility of the above recv returning
-			 * less than TAM_BUFFER bytes.  This is because a recv returns
-			 * as soon as there is some data, and will not wait for
-			 * all of the requested data to arrive.  Since TAM_BUFFER bytes
-			 * is relatively small compared to the allowed TCP
-			 * packet sizes, a partial receive is unlikely.  If
-			 * this example had used 2048 bytes requests instead,
-			 * a partial receive would be far more likely.
-			 * This loop will keep receiving until all TAM_BUFFER bytes
-			 * have been received, thus guaranteeing that the
-			 * next recv at the top of the loop will start at
-			 * the begining of the next request.
-			 */
-		/*while (len < TAM_BUFFER) {
-			len1 = recv(s, &buf[len], TAM_BUFFER-len, 0);
-			if (len1 == -1) errout(hostname);
-			len += len1;
-		}*/
+	
 		buf[len] = '\0';
 		char *pos;
 		if ((pos=strchr(buf, '\r')) != NULL)
@@ -432,15 +402,10 @@ void serverTCP(int s, struct sockaddr_in clientaddr_in)
 			/* Increment the request count. */
 
 
-
-		/*printf("COMPARACION LIST: %d", strcmp(buf, "LIST"));
-		fflush(stdout);*/
-
 		reqcnt++;
 			writeLog(buf, logSem, "TCP", clientaddr_in.sin_port);
 		flag = commandIn(s, buf, TAM_BUFFER, 0, hostname, TCP_MODE, clientaddr_in, sizeof(clientaddr_in));			
-			
-	//}		
+				
 	}
 
 
@@ -502,6 +467,12 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 
 
 
+	/*
+	Creamos un nuevo proceso para la comunicacion con cada cliente. A este nuevo proceso le asignamos un nuevo socket.
+	Al estar en UDP no necesitamos conectar el nuevo socket con el cliente, simplemente le enviamos las respuestas y
+	el cliente será el encargado de identificar el nuevo socket y enviarle el resto de solicitudes a el.
+	*/
+
 	switch(fork()){
 		case -1:
 			perror("Error fork");
@@ -517,7 +488,6 @@ void serverUDP(int s, char *initBuf, struct sockaddr_in initAddr)
 			bzero((char *) &newServerAddr, sizeof(newServerAddr));
 			/* Bind the server's address to the socket. */
 			if (bind(s_UDP, (struct sockaddr *) &newServerAddr, sizeof(struct sockaddr_in)) == -1) {
-				//perror(argv[0]);
 				printf("unable to bind address UDP\n");
 				exit(1);
 				}
