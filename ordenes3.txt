@@ -1,0 +1,18 @@
+LIST
+NEWNEWS local.test 201127 120000
+POST
+Newsgroups: local.deporte
+
+El pádel es un deporte divertido.
+Se puede practicar a cualquier edad.
+En poco tiempo se puede mejorar mucho.
+.
+POST
+Newsgroups: local.deporte
+Subject: Padél mi deporte preferido
+
+El pádel es un deporte divertido.
+Se puede practicar a cualquier edad.
+En poco tiempo se puede mejorar mucho.
+.
+QUIT

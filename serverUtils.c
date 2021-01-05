@@ -1054,7 +1054,7 @@ void writeLog(char *msg, int sem, char *prot, in_port_t port){
 			exit(EXIT_FAILURE);
 	} 
 
-	if((log = fopen("serverLog", "a")) == NULL){
+	if((log = fopen("nntpd.log", "a")) == NULL){
 		perror("fopen log");
 	} else{
 		fprintf(log, "\n%s\t%s port %u: %s",(char *) ctime(&timeVar), localProt, ntohs(port), msg);
